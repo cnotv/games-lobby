@@ -1,15 +1,10 @@
 <script setup lang="ts">
 import { Check } from 'lucide-vue-next'
 import PictionaryCard from './PictionaryCard.vue'
-import { onUnmounted, ref, watch } from 'vue'
+import { watch } from 'vue'
 import type { DictionaryDifficulty } from '@webgamekit/dictionary'
 import type { PictionaryPlayer, PictionaryRound } from '@/stores/pictionary'
-import {
-  p2pIsSupported,
-  p2pLobbyJoin,
-  type LobbyHandle,
-  type MatchRequest
-} from '@webgamekit/multiplayer-p2p'
+import { useGameLobby } from '@/composables/useGameLobby'
 import {
   PLAYER_COLORS,
   ROUND_DURATION_OPTIONS,
@@ -18,7 +13,6 @@ import {
 } from './constants'
 
 const MATCHMAKER_ROOM = 'pictionary-matchmaker'
-const PEER_ID_LENGTH = 8
 
 const props = defineProps<{
   playerName: string
@@ -48,62 +42,23 @@ const emit = defineEmits<{
   leaveRoom: []
 }>()
 
-const lobbyHandle = ref<LobbyHandle | null>(null)
-const pendingRequests = ref<Array<{ request: MatchRequest; fromPeerId: string }>>([])
-const peerNames = ref<Record<string, string>>({})
+const {
+  isSearching,
+  pendingRequests,
+  startSearching,
+  stopSearching,
+  acceptRequest,
+  ignoreRequest,
+  displayName
+} = useGameLobby({
+  matchmakerRoom: MATCHMAKER_ROOM,
+  getRoomId: () => props.roomId,
+  getPlayerName: () => props.playerName
+})
 
-const displayName = (peerId: string): string =>
-  peerNames.value[peerId] || peerId.slice(0, PEER_ID_LENGTH)
-
-const stopSearching = (): void => {
-  lobbyHandle.value?.stop()
-  lobbyHandle.value = null
-  pendingRequests.value = []
-  peerNames.value = {}
-}
-
-const startSearching = (): void => {
-  if (!p2pIsSupported() || lobbyHandle.value) return
-
-  const handle = p2pLobbyJoin(MATCHMAKER_ROOM, undefined, {
-    onPeerJoin: (peerId) => {
-      handle.sendRequest(peerId, props.roomId)
-    },
-    onPeerLeave: (peerId) => {
-      pendingRequests.value = pendingRequests.value.filter((r) => r.fromPeerId !== peerId)
-    },
-    onRequest: (request, fromPeerId) => {
-      if (!pendingRequests.value.some((r) => r.fromPeerId === fromPeerId)) {
-        pendingRequests.value = [...pendingRequests.value, { request, fromPeerId }]
-      }
-    },
-    onAccepted: () => {
-      // Our request was accepted — the peer is coming to our room. Stay and keep searching.
-    },
-    onIgnored: () => {},
-    onPeerName: (peerId, name) => {
-      peerNames.value = { ...peerNames.value, [peerId]: name }
-    }
-  })
-
-  handle.getPeerIds().forEach((peerId) => handle.sendRequest(peerId, props.roomId))
-  handle.setName(props.playerName)
-  lobbyHandle.value = handle
-}
-
-const acceptRequest = (entry: { request: MatchRequest; fromPeerId: string }): void => {
-  if (!lobbyHandle.value) return
-  lobbyHandle.value.acceptRequest(entry.request, entry.fromPeerId)
-  stopSearching()
-  emit('matchFound', entry.request.gameRoomId)
-}
-
-const ignoreRequest = (entry: { request: MatchRequest; fromPeerId: string }): void => {
-  if (!lobbyHandle.value) return
-  lobbyHandle.value.ignoreRequest(entry.request, entry.fromPeerId)
-  pendingRequests.value = pendingRequests.value.filter(
-    (r) => r.request.requestId !== entry.request.requestId
-  )
+const handleAccept = (entry: Parameters<typeof acceptRequest>[0]): void => {
+  const gameRoomId = acceptRequest(entry)
+  if (gameRoomId) emit('matchFound', gameRoomId)
 }
 
 const handleNameInput = (event: Event): void => {
@@ -116,8 +71,6 @@ watch(
     if (!isHost) stopSearching()
   }
 )
-
-onUnmounted(stopSearching)
 </script>
 
 <template>
@@ -164,7 +117,7 @@ onUnmounted(stopSearching)
     </div>
 
     <PictionaryCard v-if="isHost" class="pictionary-lobby__matchmaker">
-      <template v-if="!lobbyHandle">
+      <template v-if="!isSearching">
         <p v-if="playerList.length <= 1" class="pictionary-lobby__matchmaker-label">
           No one else here yet.
         </p>
@@ -204,7 +157,7 @@ onUnmounted(stopSearching)
               <button
                 class="pictionary-lobby__matchmaker-btn"
                 type="button"
-                @click="acceptRequest(entry)"
+                @click="handleAccept(entry)"
               >
                 Join
               </button>
