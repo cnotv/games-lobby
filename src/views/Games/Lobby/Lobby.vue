@@ -469,7 +469,9 @@ onMounted(async () => {
   overflow: hidden;
   background: var(--lb-bg);
   font-family: var(--lui-font);
-  opacity: 0;
+
+  /* Not 0: a fully transparent page paints nothing, and Lighthouse then reports no first contentful paint. */
+  opacity: 0.01;
   transition: opacity 0.4s ease;
 }
 
