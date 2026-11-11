@@ -24,12 +24,12 @@ automatically. Four registrations are easy to forget and invisible when missing:
   it makes Vite resolve through `node_modules` to a possibly stale `dist`, and the app throws
   a runtime `SyntaxError` in both dev and Docker.
 
-Walkthrough: `documentation/docs/guides/creating-a-3d-view.md`.
+Walkthrough: [`guides/creating-a-3d-view.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/guides/creating-a-3d-view.md) in generative-art.
 
 ## Scene setup
 
 Declare the scene in `config.ts` via `SetupConfig` before writing any Three.js. Audit the
-available options in `packages/threejs/src/types.ts` first — `scene.backgroundColor`,
+available options in `node_modules/@webgamekit/threejs/dist/types.d.ts` first — `scene.backgroundColor`,
 `lights.*`, `ground.*`, `sky.*`, `camera.*`, `orbit`, `postprocessing` — then pass the config
 to `setup()`, using `defineSetup` for model loading.
 
@@ -133,7 +133,7 @@ order, and each one is only visible after the previous is fixed:
 A fourth reads identically to the first and is not a physics problem at all: stepping the world
 moves the body, never the mesh. Anything dynamic needs `syncMeshWithBody` every frame.
 
-Reasoning: `documentation/docs/journey/scale-gravity-and-tunnelling.md`.
+Reasoning: [`journey/scale-gravity-and-tunnelling.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/journey/scale-gravity-and-tunnelling.md) in generative-art.
 
 ## Input
 

@@ -13,7 +13,7 @@ paths:
 - **Arrange, Act, Assert** — structure every test in those three sections.
 - **Parameterise with `it.each`.** When the same logic is exercised with different inputs,
   it is one table-driven test, never several near-identical copies. Reference:
-  `packages/controls/src/core.test.ts`.
+  the [controls package tests](https://github.com/cnotv/generative-art/blob/main/packages/controls/src/core.test.ts) in generative-art.
 - Cover the core logic, the edge cases and the public API — not the getters.
 
 ## Writing tests first

@@ -50,10 +50,5 @@ export const getRoutes = (views: Record<string, () => Promise<unknown>>, dir: st
 }
 
 export const generatedRoutes = [
-  ...getRoutes(import.meta.glob(`/src/views/Tools/**/*.vue`), 'Tools'),
-  ...getRoutes(import.meta.glob(`/src/views/Generative/**/*.vue`), 'Generative'),
-  ...getRoutes(import.meta.glob(`/src/views/Games/**/*.vue`), 'Games'),
-  ...getRoutes(import.meta.glob(`/src/views/Experiments/**/*.vue`), 'Experiments'),
-  ...getRoutes(import.meta.glob(`/src/views/Tests/**/*.vue`), 'Tests'),
-  ...getRoutes(import.meta.glob(`/src/views/Stages/**/*.vue`), 'Stages')
+  ...getRoutes(import.meta.glob(`/src/views/Games/**/*.vue`), 'Games')
 ]

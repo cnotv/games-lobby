@@ -47,10 +47,10 @@ hand-drawn tokens (`--lui-radius-sketch*`); dividers use the `--lui-squiggle*` i
   only the set matching the device last used, tracked by `src/composables/useInputDevice.ts`
   and fed by every controls callback through `reportInputSource`. Never render both at once;
   omit the prop for a device with no binding and the pill hides itself.
-- **Showcase**: every new `LobbyUI*` component, and every new visual variant of an existing
-  one, is added to `src/views/Tests/LobbyUIShowcase/LobbyUIShowcase.vue` in the same change,
-  wired into a labelled `LobbyUIRow` with realistic data so it joins the focus flow. A
-  component missing from the showcase is an incomplete change.
+- **Showcase**: the LobbyUI showcase lives in generative-art
+  ([`LobbyUIShowcase.vue`](https://github.com/cnotv/generative-art/blob/main/src/views/Tests/LobbyUIShowcase/LobbyUIShowcase.vue)),
+  which keeps its own copy of the kit. A new `LobbyUI*` component or visual variant made here
+  is added there too, so the two copies do not drift.
 
 ## Dialogs over a running or finished game
 
@@ -84,7 +84,7 @@ Every one is a transparent overlay, never a solid panel. Reference: `MarbleMadne
    every non-modal `useMenuNavigation` handler behind it. Dialog-specific bindings register
    their own `useMenuNavigation(handler, undefined, { modal: true })`. Never leave background
    handlers live behind an open dialog, and never hand-build a dialog-local focus system.
-   Background: `documentation/docs/guides/lobbyui-dialog-focus.md`.
+   Background: [`guides/lobbyui-dialog-focus.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/guides/lobbyui-dialog-focus.md) in generative-art.
 
 ## Game structure
 
@@ -109,4 +109,4 @@ wrapper. Rules live in their own template-only `<GameName>Rules.vue` next to the
 inlined in the view. Multiplayer views use a two-column grid with `grid-area: main` and
 `grid-area: sidebar`, collapsing the sidebar behind `GameTabBar` at 720px.
 
-Walkthrough: `documentation/docs/guides/adding-game-to-lobby.md`.
+Walkthrough: [`guides/adding-game-to-lobby.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/guides/adding-game-to-lobby.md) in generative-art.

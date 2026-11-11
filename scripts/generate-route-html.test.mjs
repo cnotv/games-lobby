@@ -11,8 +11,8 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const SCRIPT = resolve(ROOT, 'scripts/generate-route-html.mjs')
 
 const INDEX_HTML = `<!doctype html><html><head>
-<title>Generative art</title>
-<meta property="og:title" content="Generative art" />
+<title>cnotv games</title>
+<meta property="og:title" content="cnotv games" />
 <meta property="og:image" content="" />
 </head><body></body></html>`
 
@@ -20,8 +20,8 @@ const dist = mkdtempSync(join(tmpdir(), 'route-html-'))
 
 beforeAll(() => {
   writeFileSync(join(dist, 'index.html'), INDEX_HTML)
-  mkdirSync(join(dist, 'og/generative'), { recursive: true })
-  writeFileSync(join(dist, 'og/generative/CubeMatrix.jpg'), '')
+  mkdirSync(join(dist, 'og/games'), { recursive: true })
+  writeFileSync(join(dist, 'og/games/Pictionary.jpg'), '')
   execFileSync('node', [SCRIPT], { env: { ...process.env, DIST_DIR: dist } })
 })
 
@@ -31,27 +31,27 @@ afterAll(() => {
 
 describe('generate-route-html', () => {
   it('writes the route page as a folder index, served for /route/', () => {
-    const html = readFileSync(join(dist, 'generative/CubeMatrix/index.html'), 'utf8')
-    expect(html).toContain('<meta property="og:title" content="Cube Matrix"')
+    const html = readFileSync(join(dist, 'games/Pictionary/index.html'), 'utf8')
+    expect(html).toContain('<meta property="og:title" content="Pictionary"')
   })
 
   // vite preview (production) only resolves /route to route.html, never route/index.html
   it('writes the route page as a sibling .html, served for /route without a trailing slash', () => {
-    const html = readFileSync(join(dist, 'generative/CubeMatrix.html'), 'utf8')
-    expect(html).toContain('<meta property="og:title" content="Cube Matrix"')
+    const html = readFileSync(join(dist, 'games/Pictionary.html'), 'utf8')
+    expect(html).toContain('<meta property="og:title" content="Pictionary"')
   })
 
   it("points og:image at the route's own capture when it exists", () => {
-    const html = readFileSync(join(dist, 'generative/CubeMatrix.html'), 'utf8')
+    const html = readFileSync(join(dist, 'games/Pictionary.html'), 'utf8')
     expect(html).toContain(
-      '<meta property="og:image" content="https://cnotv.xyz/og/generative/CubeMatrix.jpg"'
+      '<meta property="og:image" content="https://games.cnotv.xyz/og/games/Pictionary.jpg"'
     )
   })
 
-  it('falls back to the landing page capture when the route has none', () => {
-    const html = readFileSync(join(dist, 'games/MazeGame.html'), 'utf8')
+  it('falls back to the lobby capture when the route has none', () => {
+    const html = readFileSync(join(dist, 'games/Minigolf.html'), 'utf8')
     expect(html).toContain(
-      '<meta property="og:image" content="https://cnotv.xyz/og/experiments/LandingPage.jpg"'
+      '<meta property="og:image" content="https://games.cnotv.xyz/og/games/Lobby.jpg"'
     )
   })
 })

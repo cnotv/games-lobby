@@ -36,8 +36,8 @@ pushed. Measure first — the expensive thing is rarely the thing that looks exp
 ## When a metric is red
 
 Fix it, then re-run the gate — a single pass proves nothing if the fix changed the scene.
-The techniques are in `documentation/docs/guides/reducing-performance-costs.md`, and the
-mobile-specific reasoning is in `documentation/docs/guides/mobile-performance.md`.
+The techniques are in [`guides/reducing-performance-costs.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/guides/reducing-performance-costs.md) in generative-art, and the
+mobile-specific reasoning is in [`guides/mobile-performance.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/guides/mobile-performance.md) in generative-art.
 
 Budget for the phone, not the laptop: fill rate and texture memory bind long before
 triangle count does. A 1024x1024 texture costs 4 MB of VRAM whatever its file size, so a
