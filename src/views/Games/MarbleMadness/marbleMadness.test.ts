@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest'
-import { TRACKS, FALL_THRESHOLD_Y, MARBLE_RADIUS, MOVE_FORCE, MAX_LINEAR_SPEED } from './config'
+import {
+  TRACKS,
+  FALL_THRESHOLD_Y,
+  MARBLE_RADIUS,
+  MOVE_FORCE,
+  MAX_LINEAR_SPEED,
+  MARBLE_OPTIONS,
+  DEFAULT_MARBLE
+} from './config'
+
+describe('MARBLE_OPTIONS', () => {
+  // The options come from a glob over the marble textures; an empty folder leaves the game
+  // with no default marble, and both marble games then render nothing.
+  it('finds the marble textures', () => {
+    expect(MARBLE_OPTIONS.length).toBeGreaterThan(0)
+    expect(DEFAULT_MARBLE).toBeDefined()
+  })
+})
 
 describe('TRACKS', () => {
   it('defines at least one track', () => {
