@@ -103,7 +103,7 @@ in the matching `.claude/rules/` file. A PR body links to those homes.
 - **Dead code:** `npx knip` (entry points in `knip.json`, including each game's route view); tests are outside its project, so check a file or dependency against the tests before removing it
 - **Deploy:** a push to `main` builds `ghcr.io/cnotv/games-lobby` and runs it on the Hetzner host, port 3003
 - **Errors:** Sentry, from the `VITE_SENTRY_DSN` secret; no analytics
-- **PR media:** `media-capture` screenshot and one GIF of the lobby or the changed game, in the body before ready
+- **PR media:** `media-capture` screenshot and one GIF of the lobby or the changed game, committed under `.github/pr-media/pr-<number>/` and linked in the body by raw URL pinned to the commit sha, with the Netlify deploy preview link beside it, before ready
 - **Scoped rules and local skills:** `.claude/rules/` and `.claude/skills/`, indexed below
 
 ### Done checklist

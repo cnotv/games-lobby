@@ -38,3 +38,5 @@ coverage
 
 # Python bytecode from the Blender scripts
 __pycache__/
+
+.playwright-mcp/
