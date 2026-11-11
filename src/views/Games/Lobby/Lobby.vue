@@ -2,7 +2,12 @@
 import { ref, computed, onMounted, onUnmounted, watch, provide, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { LobbyUINameInput, LobbyUIColorSwatches } from '@/components/LobbyUI'
+import {
+  LobbyUINameInput,
+  LobbyUIColorSwatches,
+  LobbyUIButton,
+  LobbyUIKeyPill
+} from '@/components/LobbyUI'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
 import { Chat } from '@/components/Chat'
 import '@/assets/styles/game-ui.scss'
@@ -34,6 +39,20 @@ import type { GameType, LobbyRoom } from '@/types/lobby'
 import { GAME_LABELS, GAME_TYPES, GAME_COMPONENTS, EXPERIMENTAL_GAMES } from './constants'
 
 const FONT_KEY = 'lobby-font'
+const FONT_URL = 'https://fonts.googleapis.com/css2?family=Darumadrop+One&display=swap'
+const FONT_FACE = '1em "Darumadrop One"'
+const FONT_TIMEOUT_MS = 3000
+
+const fontReady = ref(false)
+
+const loadLobbyFont = async (): Promise<void> => {
+  await loadGoogleFont(FONT_URL, FONT_KEY)
+  await Promise.race([
+    document.fonts.load(FONT_FACE).catch(() => []),
+    new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS))
+  ])
+  fontReady.value = true
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -113,12 +132,23 @@ watch(activeGame, (game, previous) => {
 onMounted(() => {
   saveProfile(playerName.value, playerColor.value)
   init()
-  loadGoogleFont('https://fonts.googleapis.com/css2?family=Darumadrop+One&display=swap', FONT_KEY)
+  loadLobbyFont()
 })
 
 onUnmounted(() => {
   removeGoogleFont(FONT_KEY)
 })
+
+const openSettings = async (): Promise<void> => {
+  profileOpen.value = true
+  await nextTick()
+  const nameInput = lobbyRoot.value?.querySelector<HTMLInputElement>('.lobby__profile input')
+  const row = nameInput?.closest<HTMLElement>('[data-nav-row]')
+  if (!nameInput || !row) return
+  focusRow.value = queryRows().indexOf(row)
+  focusCol.value = 0
+  nameInput.focus()
+}
 
 const handleNameCommit = (): void => {
   saveProfile(playerName.value, playerColor.value)
@@ -196,7 +226,43 @@ const isTextInput = (element: Element | null): boolean =>
   element instanceof HTMLInputElement &&
   new Set(['text', 'number', 'email', 'password']).has(element.type)
 
+const CARD_SELECTOR = '.lobby__game-card'
+
+const queryCards = (): HTMLElement[] =>
+  lobbyRoot.value ? [...lobbyRoot.value.querySelectorAll<HTMLElement>(CARD_SELECTOR)] : []
+
+const centerOf = (element: HTMLElement): { x: number; y: number } => {
+  const box = element.getBoundingClientRect()
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+}
+
+// Cards wrap onto several visual rows inside one nav row, so vertical moves follow the layout:
+// the nearest card in the chosen direction, preferring the one most directly above or below.
+const findCardVertically = (current: HTMLElement, direction: 1 | -1): HTMLElement | undefined => {
+  const from = centerOf(current)
+  const rowGap = current.getBoundingClientRect().height / 2
+  return queryCards()
+    .map((card) => ({ card, center: centerOf(card) }))
+    .filter(({ center }) => (center.y - from.y) * direction > rowGap)
+    .sort(
+      (first, second) =>
+        Math.abs(first.center.y - from.y) - Math.abs(second.center.y - from.y) ||
+        Math.abs(first.center.x - from.x) - Math.abs(second.center.x - from.x)
+    )[0]?.card
+}
+
+const moveBetweenCards = (direction: 1 | -1): boolean => {
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement) || !active.matches(CARD_SELECTOR)) return false
+  const target = findCardVertically(active, direction)
+  if (!target) return false
+  focusCol.value = queryCards().indexOf(target)
+  target.focus()
+  return true
+}
+
 const handleNavUp = (rows: HTMLElement[]): void => {
+  if (moveBetweenCards(-1)) return
   focusRow.value = Math.max(0, focusRow.value - 1)
   focusCol.value = 0
   applyFocus()
@@ -204,6 +270,7 @@ const handleNavUp = (rows: HTMLElement[]): void => {
 }
 
 const handleNavDown = (rows: HTMLElement[]): void => {
+  if (moveBetweenCards(1)) return
   focusRow.value = Math.min(rows.length - 1, focusRow.value + 1)
   focusCol.value = 0
   applyFocus()
@@ -250,7 +317,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div ref="lobbyRoot" class="lobby" :class="{ 'lobby--in-game': !!activeComponent }">
+  <div
+    ref="lobbyRoot"
+    class="lobby"
+    :class="{ 'lobby--in-game': !!activeComponent, 'lobby--ready': fontReady }"
+  >
     <!-- Main content area -->
     <main class="lobby__main">
       <div v-if="activeComponent" class="lobby__game-embed">
@@ -277,6 +348,12 @@ onMounted(async () => {
             />
             <span class="lobby__game-name">{{ GAME_LABELS[game] }}</span>
           </button>
+        </div>
+        <div data-nav-row>
+          <LobbyUIButton variant="ghost" size="sm" @click="openSettings">
+            Settings
+            <LobbyUIKeyPill :keyboard="['Enter']" :gamepad="['A']" />
+          </LobbyUIButton>
         </div>
       </div>
     </main>
@@ -387,6 +464,12 @@ onMounted(async () => {
   overflow: hidden;
   background: var(--lb-bg);
   font-family: var(--lui-font);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.lobby--ready {
+  opacity: 1;
 }
 
 .lobby--in-game {
