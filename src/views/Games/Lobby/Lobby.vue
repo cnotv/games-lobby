@@ -45,10 +45,15 @@ const FONT_TIMEOUT_MS = 3000
 
 const fontReady = ref(false)
 
-const loadLobbyFont = async (): Promise<void> => {
+const loadFontFace = async (): Promise<void> => {
   await loadGoogleFont(FONT_URL, FONT_KEY)
+  await document.fonts.load(FONT_FACE).catch(() => [])
+}
+
+// The timeout covers the stylesheet request too: a stalled font host must not keep the page blank.
+const loadLobbyFont = async (): Promise<void> => {
   await Promise.race([
-    document.fonts.load(FONT_FACE).catch(() => []),
+    loadFontFace(),
     new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS))
   ])
   fontReady.value = true
