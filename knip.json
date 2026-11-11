@@ -1,0 +1,23 @@
+{
+  "entry": [
+    "src/main.ts",
+    "src/test-setup.ts",
+    "scripts/*.{mjs,js}",
+    "rules/*.js",
+    "eslint.config.js",
+    "src/edge/*.ts",
+    "src/**/*.worker.ts",
+    "src/views/Games/Lobby/Lobby.vue",
+    "src/views/Games/Pictionary/Pictionary.vue",
+    "src/views/Games/WordleMultiplayer/WordleMultiplayer.vue",
+    "src/views/Games/SquaresMultiplayer/SquaresMultiplayer.vue",
+    "src/views/Games/Minigolf/Minigolf.vue",
+    "src/views/Games/BubbleShooter/BubbleShooter.vue",
+    "src/views/Games/RhythmGame/RhythmGame.vue",
+    "src/views/Games/MarbleMadness/MarbleMadness.vue",
+    "src/views/Games/MarbleEditor/MarbleEditor.vue",
+    "src/views/Games/RockRunner/RockRunner.vue",
+    "src/views/Games/WordRunner/WordRunner.vue"
+  ],
+  "project": ["src/**/*.{ts,vue}", "!src/**/*.test.ts", "!src/**/*.browser.test.ts"]
+}

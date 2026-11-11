@@ -1,8 +1,11 @@
-# Generative Art — WebGameKit
+# cnotv games
 
-A pnpm workspace monorepo: a framework-agnostic toolkit for 3D scenes, games and animation
-in `packages/@webgamekit/*`, and a Vue 3 playground that uses it in `src/`. Architecture:
-`documentation/docs/architecture/monorepo.md`.
+The multiplayer games site at games.cnotv.xyz: a lobby with chat, presence and rooms at
+`/`, and ten games in `src/views/Games/` (Pictionary, Wordle, Squares, Minigolf, Bubbles,
+Rhythm, Marbles, Marble Builder, Rock Runner, Word Runner), played peer to peer over
+`@webgamekit/multiplayer-p2p`. Rock Runner's sound panel embeds a copy of the Strudel editor
+(`src/views/Tools/StrudelEditor`, `packages/strudel-flow`). It was cut out of
+[cnotv/generative-art](https://github.com/cnotv/generative-art) and uses its packages from npm.
 
 This file holds the rules that apply to every change. Rules for one area load from
 `.claude/rules/`, procedures from agent-base's `workflow` plugin and `.claude/skills/` — all
@@ -68,10 +71,10 @@ owes them before the pull request is marked ready.
 - **Spell out a domain acronym on first use**, e.g. `ccd` (continuous collision detection).
 - **DRY and KISS.** If a pattern appears twice, extract it. Prefer the simplest thing that
   works over an abstraction you might need later.
-- **Reuse before writing.** Check `src/components/`, `src/utils/` and `src/stores/` first.
-  `src/components/` has five tiers — `ui/` primitives, the `LobbyUI/` overlay kit, the
-  `panels/` system, `<Feature>/` folders and shared root components — and `vue-components.md`
-  says which to reach for. Verify a dependency is actively maintained before adding it.
+- **Reuse before writing.** Check `src/components/` first: `ui/` primitives, the `LobbyUI/`
+  overlay kit, the `panels/` system and shared root components; `vue-components.md` says which
+  to reach for. Then `src/utils/` and `src/stores/`. Verify a dependency is actively
+  maintained before adding it.
 - **No pointless wrappers.** Before adding a `<div>` or `<section>`, ask what layout,
   semantics or behaviour it adds that the parent cannot. If none, drop it.
 
@@ -87,36 +90,27 @@ owes them before the pull request is marked ready.
 
 ## Where output goes
 
-Documentation is Docusaurus, in `documentation/`, never a standalone markdown file elsewhere.
-Every explanation has one home. Write it there; everywhere else links to it.
-
-| What you have                                    | Where it goes                      |
-| ------------------------------------------------ | ---------------------------------- |
-| How to use or run something                      | `documentation/docs/guides/`       |
-| A package's API                                  | `documentation/docs/packages/`     |
-| How the pieces fit, or a structural change       | `documentation/docs/architecture/` |
-| A challenge, a wrong turn, or a research finding | `documentation/docs/journey/`      |
-| A constraint that will bite the next person here | the matching `.claude/rules/` file |
-
-A PR body links to these homes; a section growing into an explanation belongs in one.
+Documentation stays in generative-art's Docusaurus site
+([cnotv/generative-art](https://github.com/cnotv/generative-art/tree/main/documentation/docs)); this repository has none of its own. A new
+game gets its journey doc there, and a constraint that will bite the next person here goes
+in the matching `.claude/rules/` file. A PR body links to those homes.
 
 ## Project facts
 
 - **Dev server:** `pnpm dev --port 5317 --strictPort`, served at `http://localhost:5317`
-- **Routes:** `/<dir-lowercase>/<ViewBaseName>` from the view tree, e.g. `/games/GoombaRunner`
-- **Verify notes:** `documentation/docs/guides/visual-verification-with-screenshots.md`; shots: `pnpm capture`
-- **Checks:** `pnpm lint`, `pnpm lint:css`, `pnpm test:unit`; **Security:** `pnpm audit --prod`, no threat model
-- **Docs home:** `documentation/docs/`, homes above; **Docs build:** `pnpm docs:build`
-- **Preview deploys:** the `deploy/netlify` check's `targetUrl`, with the view's route appended; PR media (no `pr-preview` workflow): `media-capture` screenshot and one GIF, the GIF committed to `pr-media` and linked by a sha pinned raw URL (`documentation/docs/guides/videos-in-pull-requests.md`), all in the body before ready
+- **Routes:** `/` is the lobby (`?game=<Game>&room=<id>` opens a game); each game also has `/games/<Game>`
+- **Checks:** `pnpm lint`, `pnpm lint:css`, `pnpm test:unit`, `pnpm build`; **Security:** `pnpm audit --prod`, no threat model
+- **Dead code:** `npx knip` (entry points in `knip.json`, including each game's route view); tests are outside its project, so check a file or dependency against the tests before removing it
+- **Deploy:** a push to `main` builds `ghcr.io/cnotv/games-lobby` and runs it on the Hetzner host, port 3003
+- **Errors:** Sentry, from the `VITE_SENTRY_DSN` secret; no analytics
+- **PR media:** `media-capture` screenshot and one GIF of the lobby or the changed game, in the body before ready
 - **Scoped rules and local skills:** `.claude/rules/` and `.claude/skills/`, indexed below
 
 ### Done checklist
 
-- [ ] New view has a `src/config/viewsMeta.json` entry
-- [ ] New package is in the `packages` array in `vite.config.ts`
-- [ ] New `LobbyUI*` component or variant appears in `LobbyUIShowcase.vue`
-- [ ] New game has its own `documentation/docs/journey/<game-name>.md`
-- [ ] Touched a 3D scene or asset: `perf-check` ran; changed a file a guide tracks: `sync-docs` ran
+- [ ] New game is in `GAME_TYPES` (`src/types/lobby.ts`), `GAME_COMPONENTS` (`src/views/Games/Lobby/constants.ts`), `src/config/viewsMeta.json` and `knip.json`
+- [ ] Touched a 3D scene or asset: `perf-check` ran
+- [ ] A sound change was checked muted, never through the speakers
 - [ ] Every artifact the issue named exists, not just the ones forced by a deletion
 
 ## Scoped rules
@@ -129,9 +123,7 @@ Each file in `.claude/rules/` declares a `paths:` glob and loads only when a mat
 | `lobby-ui.md`            | the LobbyUI kit, a game overlay or dialog, or anything in `src/views/Games/` |
 | `threejs-views.md`       | a 3D view, scene, animation loop, or the threejs package                     |
 | `music.md`               | a Strudel style, song, or music pattern                                      |
-| `packages.md`            | anything in `packages/`, and whether a new one is earned at all              |
 | `tests.md`               | any `*.test.ts`                                                              |
-| `docs.md`                | anything in `documentation/`                                                 |
 | `colour.md`              | choosing any colour — a material, a background, a token, a diagram           |
 
 ## Procedures
@@ -143,6 +135,5 @@ Never copy them into `.claude/skills/`, which holds only this repository's own s
 | Skill           | Use when                                                        |
 | --------------- | --------------------------------------------------------------- |
 | `perf-check`    | a 3D scene or asset changed, or something is reported slow      |
-| `sync-docs`     | you changed a file that a tutorial documents                    |
 | `strudel-sound` | asked for music or a sound, or to save a pattern as WAV or MIDI |
 | `sound-design`  | deciding what a sound is made of, editing audio, or teaching it |

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { generatedRoutes as generatedRoutesAll } from '@/config/router'
-import { playableExamples, buildExampleUrl } from '@/config/examples'
 import GenericPanel from './GenericPanel.vue'
 
 const generatedRoutes = generatedRoutesAll.filter((route): route is NonNullable<typeof route> => {
@@ -29,18 +28,6 @@ const generatedRoutes = generatedRoutesAll.filter((route): route is NonNullable<
             {{ route.name }}
           </router-link>
         </template>
-
-        <div class="sidebar-nav__group mt-4 text-xs font-bold text-muted-foreground uppercase">
-          Examples
-        </div>
-        <a
-          v-for="example in playableExamples"
-          :key="example.slug"
-          :href="buildExampleUrl(example.slug)"
-          class="sidebar-nav__link text-sm hover:text-primary transition-colors"
-        >
-          {{ example.title }}
-        </a>
       </nav>
     </div>
   </GenericPanel>

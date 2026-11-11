@@ -118,7 +118,7 @@ Only a concern that is genuinely shared by unrelated views earns a new root comp
   document is not what is behind the text. The scene is, and nothing in CSS knows what
   colour it is painting. An overlay that inherits looks correct until the scene, or the
   inherited value, changes underneath it. See
-  `documentation/docs/journey/background-propagation.md`.
+  [`journey/background-propagation.md`](https://github.com/cnotv/generative-art/blob/main/documentation/docs/journey/background-propagation.md) in generative-art.
 - **`App.vue` makes every `canvas` absolute and full-size**, for the 3D views. A canvas that
   belongs in the flow of ordinary UI, such as a chart or an editor widget, has to set
   `position: static` itself, or it lifts out of place and covers whatever sits at the top

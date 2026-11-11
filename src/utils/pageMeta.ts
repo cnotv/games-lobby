@@ -1,7 +1,7 @@
 const BASE_URL = window.location.origin
-const DEFAULT_IMAGE = `${BASE_URL}${import.meta.env.BASE_URL}og/experiments/LandingPage.jpg`
+const DEFAULT_IMAGE = `${BASE_URL}${import.meta.env.BASE_URL}og/games/Lobby.jpg`
 const DEFAULT_DESCRIPTION =
-  'Interactive generative art, 3D experiments, and games built with Three.js and Vue.'
+  'Multiplayer browser games: drawing, word, puzzle, marble and rhythm games you play with friends, no sign-up.'
 
 interface PageMeta {
   title: string

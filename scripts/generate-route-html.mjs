@@ -3,9 +3,9 @@ import { join } from 'node:path'
 import { ROOT, discoverRoutes, ogImage, DEFAULT_OG_IMAGE } from './routes.mjs'
 
 const DIST = process.env.DIST_DIR || join(ROOT, 'dist')
-const SITE_URL = process.env.SITE_URL || 'https://cnotv.xyz'
+const SITE_URL = process.env.SITE_URL || 'https://games.cnotv.xyz'
 const DEFAULT_DESCRIPTION =
-  'Interactive generative art, 3D experiments, and games built with Three.js and Vue.'
+  'Multiplayer browser games: drawing, word, puzzle, marble and rhythm games you play with friends, no sign-up.'
 
 const viewsMeta = JSON.parse(readFileSync(join(ROOT, 'src/config/viewsMeta.json'), 'utf-8'))
 
