@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 
 export type MgPlayer = {
@@ -32,11 +33,7 @@ export const useMinigolfStore = defineStore('minigolf', () => {
     })
   )
 
-  const hostId = computed(() => {
-    const ids = Object.keys(players.value)
-    if (ids.length === 0) return ''
-    return ids[0]
-  })
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
 
   const upsertPlayer = (player: MgPlayer): void => {
     players.value = { ...players.value, [player.id]: { ...players.value[player.id], ...player } }

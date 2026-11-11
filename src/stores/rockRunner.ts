@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { DEFAULT_ROCK_SURFACE } from '@/views/Games/RockRunner/elements/rockSurfaces'
 import { ref, computed } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { RrPlayer, RrPhase } from '@/views/Games/RockRunner/types'
 
@@ -17,10 +18,7 @@ export const useRockRunnerStore = defineStore('rockRunner', () => {
     Object.values(players.value).sort((a, b) => b.distance - a.distance)
   )
 
-  const hostId = computed(() => {
-    const ids = Object.keys(players.value)
-    return ids.length > 0 ? ids[0] : ''
-  })
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
 
   const upsertPlayer = (player: RrPlayer): void => {
     players.value = { ...players.value, [player.id]: { ...players.value[player.id], ...player } }

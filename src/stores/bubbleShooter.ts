@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { BsColorCount, BsSpeed } from '@/views/Games/BubbleShooter/config'
 
@@ -23,10 +24,7 @@ export const useBubbleShooterStore = defineStore('bubbleShooter', () => {
 
   const playerList = computed(() => Object.values(players.value).sort((a, b) => b.score - a.score))
 
-  const hostId = computed(() => {
-    const ids = Object.keys(players.value)
-    return ids.length > 0 ? ids[0] : ''
-  })
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
 
   const upsertPlayer = (player: BsPlayer): void => {
     players.value = { ...players.value, [player.id]: { ...players.value[player.id], ...player } }

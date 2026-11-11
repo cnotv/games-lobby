@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { DictionaryDifficulty } from '@webgamekit/dictionary'
 
@@ -44,11 +45,7 @@ export const usePictionaryStore = defineStore('pictionary', () => {
     Object.values(players.value).sort((playerA, playerB) => playerB.score - playerA.score)
   )
 
-  const hostId = computed(() => {
-    const ids = Object.keys(players.value)
-    if (ids.length === 0) return ''
-    return ids[0]
-  })
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
 
   const upsertPlayer = (player: PictionaryPlayer): void => {
     players.value = { ...players.value, [player.id]: { ...players.value[player.id], ...player } }

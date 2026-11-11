@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 
 export type MmPlayer = {
@@ -29,10 +30,7 @@ export const useMarbleMadnessStore = defineStore('marbleMadness', () => {
     })
   )
 
-  const hostId = computed(() => {
-    const ids = Object.keys(players.value)
-    return ids.length > 0 ? ids[0] : ''
-  })
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
 
   const upsertPlayer = (player: MmPlayer): void => {
     players.value = { ...players.value, [player.id]: { ...players.value[player.id], ...player } }

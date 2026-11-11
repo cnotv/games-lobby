@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
+import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { Difficulty, WrPhase, WrPlayer } from '@/views/Games/WordRunner/types'
 
@@ -33,8 +34,7 @@ export const useWordRunnerStore = defineStore('wordRunner', () => {
   const playerList = computed(() =>
     Object.values(players.value).sort((first, second) => second.distance - first.distance)
   )
-  // The first peer to have joined hosts: every peer holds the same insertion order.
-  const hostId = computed(() => Object.keys(players.value)[0] ?? '')
+  const hostId = computed(() => electHostId(Object.keys(players.value)))
   const everyoneReady = computed(() => Object.values(players.value).every((player) => player.ready))
 
   const upsertPlayer = (player: Pick<WrPlayer, 'id' | 'name' | 'color'>): void => {
