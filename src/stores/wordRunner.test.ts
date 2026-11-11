@@ -16,13 +16,13 @@ describe('useWordRunnerStore', () => {
     expect(store.hostId).toBe('')
   })
 
-  it('makes the first player to join the host', () => {
+  it('makes the lowest peer id the host', () => {
     const store = useWordRunnerStore()
 
     join(store, 'peer-b', 'Calm Heron')
     join(store, 'peer-a', 'Quick Otter')
 
-    expect(store.hostId).toBe('peer-b')
+    expect(store.hostId).toBe('peer-a')
   })
 
   it('keeps a player on the start line until their progress arrives', () => {
