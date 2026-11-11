@@ -21,6 +21,7 @@ import type {
   WrSessionOptions,
   WrStartPayload
 } from './types'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const AVATAR_CHANNEL = 'wr-avatar'
 const START_CHANNEL = 'wr-start'
@@ -180,7 +181,7 @@ export const useWordRunnerSession = (options: WrSessionOptions, callbacks: Sessi
 
   const init = (): void => {
     if (!p2pIsSupported()) return
-    const joined = p2pJoin(options.roomId)
+    const joined = p2pJoin(options.roomId, P2P_CONFIG)
     session.value = joined
     localPeerId.value = joined.peerId
     announceSelf(context, joined)

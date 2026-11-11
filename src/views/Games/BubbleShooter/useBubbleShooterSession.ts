@@ -22,6 +22,7 @@ import type {
   UseBubbleShooterSessionOptions,
   BsContext
 } from './types'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const CONFIG_CHANNEL = 'bs-config'
 const HELLO_CHANNEL = 'bs-hello'
@@ -134,7 +135,7 @@ const bindGameEvents = (ctx: BsContext, joined: P2PSession): void => {
 
 const initSessionForContext = (ctx: BsContext, roomId: string): void => {
   if (!p2pIsSupported()) return
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)

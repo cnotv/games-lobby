@@ -516,24 +516,24 @@ onMounted(async () => {
 }
 
 .lobby__picker-games {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: var(--spacing-4);
-  flex-wrap: wrap;
-  justify-content: center;
+  width: min(100%, 60rem);
 }
 
 .lobby__game-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--spacing-2);
-  padding: var(--spacing-5, 1.5rem) var(--spacing-6, 2rem);
+  padding: var(--spacing-4);
   border: 3px solid transparent;
   border-radius: 1.25rem;
   background: transparent;
   cursor: pointer;
   transition: transform 0.1s ease;
-  width: 14rem;
   touch-action: manipulation;
 }
 
@@ -679,16 +679,12 @@ onMounted(async () => {
 
   .lobby__picker-games {
     gap: var(--spacing-3);
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    justify-content: flex-start;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    overflow-y: auto;
   }
 
   .lobby__game-card {
-    padding: var(--spacing-3) var(--spacing-4);
-    width: 10rem;
-    flex: 0 0 auto;
+    padding: var(--spacing-3);
   }
 }
 </style>

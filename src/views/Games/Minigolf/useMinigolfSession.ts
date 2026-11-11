@@ -12,6 +12,7 @@ import {
 import { chatMessageCreate, type ChatMessage } from '@webgamekit/chat'
 import { useMinigolfStore, type MgPlayer } from '@/stores/minigolf'
 import { REANNOUNCE_DELAY_MS } from './constants'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const HELLO_CHANNEL = 'mg-hello'
 const AVATAR_CHANNEL = 'mg-avatar'
@@ -189,7 +190,7 @@ const initSessionForContext = (ctx: MgContext, roomId: string): void => {
     })
     return
   }
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)

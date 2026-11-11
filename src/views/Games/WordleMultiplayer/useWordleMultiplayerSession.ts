@@ -25,6 +25,7 @@ import {
   POINTS_FIRST_BONUS,
   POINTS_MINIMUM
 } from './constants'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const ROUND_CHANNEL = 'wl-round'
 const GUESS_CHANNEL = 'wl-guess'
@@ -270,7 +271,7 @@ const bindGameEvents = (ctx: WlContext, joined: P2PSession): void => {
 
 const initSessionForContext = (ctx: WlContext, roomId: string): void => {
   if (!p2pIsSupported()) return
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)
