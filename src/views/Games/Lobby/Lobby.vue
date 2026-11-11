@@ -26,11 +26,12 @@ import { useRhythmGameStore } from '@/stores/rhythmGame'
 import { useMarbleMadnessStore } from '@/stores/marbleMadness'
 import { useMarbleEditorStore } from '@/stores/marbleEditor'
 import { useRockRunnerStore } from '@/stores/rockRunner'
+import { useWordRunnerStore } from '@/stores/wordRunner'
 import LobbyPresence from './LobbyPresence.vue'
 import LobbyRoomList from './LobbyRoomList.vue'
 import { useLobbyStore } from '@/stores/lobby'
 import type { GameType, LobbyRoom } from '@/types/lobby'
-import { GAME_LABELS, GAME_TYPES, GAME_COMPONENTS } from './constants'
+import { GAME_LABELS, GAME_TYPES, GAME_COMPONENTS, EXPERIMENTAL_GAMES } from './constants'
 
 const FONT_KEY = 'lobby-font'
 
@@ -47,7 +48,8 @@ const gameStores: Record<GameType, { playerList: { id: string; name: string; col
     RhythmGame: useRhythmGameStore(),
     MarbleMadness: useMarbleMadnessStore(),
     MarbleEditor: useMarbleEditorStore(),
-    RockRunner: useRockRunnerStore()
+    RockRunner: useRockRunnerStore(),
+    WordRunner: useWordRunnerStore()
   }
 
 const stored = loadProfile()
@@ -73,6 +75,11 @@ provide('setRoomHidden', (hidden: boolean) => {
     toggleRoomVisibility()
   }
 })
+const showExperimental = computed(() => route.query.experimental !== undefined)
+const pickableGames = computed(() =>
+  GAME_TYPES.filter((game) => showExperimental.value || !EXPERIMENTAL_GAMES.includes(game))
+)
+const screenshotUrl = (game: GameType): string => `${import.meta.env.BASE_URL}og/games/${game}.jpg`
 const activeGame = computed(() => route.query.game as GameType | undefined)
 const activeComponent = computed(() =>
   activeGame.value ? GAME_COMPONENTS[activeGame.value] : null
@@ -254,12 +261,20 @@ onMounted(async () => {
         <p class="lobby__picker-label">Pick a game to create a room</p>
         <div class="lobby__picker-games" data-nav-row>
           <button
-            v-for="game in GAME_TYPES"
+            v-for="game in pickableGames"
             :key="game"
             class="lobby__game-card"
             type="button"
             @click="pickGame(game)"
           >
+            <img
+              class="lobby__game-shot"
+              :src="screenshotUrl(game)"
+              :alt="`${GAME_LABELS[game]} screenshot`"
+              loading="lazy"
+              width="1200"
+              height="630"
+            />
             <span class="lobby__game-name">{{ GAME_LABELS[game] }}</span>
           </button>
         </div>
@@ -428,7 +443,7 @@ onMounted(async () => {
   background: transparent;
   cursor: pointer;
   transition: transform 0.1s ease;
-  min-width: 9rem;
+  width: 14rem;
   touch-action: manipulation;
 }
 
@@ -445,6 +460,14 @@ onMounted(async () => {
 .lobby__game-card:focus .lobby__game-name,
 .lobby__game-card:focus-visible .lobby__game-name {
   color: var(--lui-focus-color);
+}
+
+.lobby__game-shot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-radius: 0.75rem;
 }
 
 .lobby__game-name {
@@ -574,7 +597,7 @@ onMounted(async () => {
 
   .lobby__game-card {
     padding: var(--spacing-3) var(--spacing-4);
-    min-width: 7rem;
+    width: 10rem;
     flex: 0 0 auto;
   }
 }

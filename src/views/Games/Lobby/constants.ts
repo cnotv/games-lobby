@@ -14,8 +14,15 @@ export const GAME_LABELS: Record<GameType, string> = {
   RhythmGame: 'Rhythm',
   MarbleMadness: 'Marbles',
   MarbleEditor: 'Marble Builder',
-  RockRunner: 'Rock Runner'
+  RockRunner: 'Rock Runner',
+  WordRunner: 'Word Runner'
 }
+
+export const EXPERIMENTAL_GAMES: readonly GameType[] = [
+  'SquaresMultiplayer',
+  'WordleMultiplayer',
+  'MarbleMadness'
+]
 
 export const GAME_COMPONENTS: Record<GameType, ReturnType<typeof defineAsyncComponent>> = {
   Pictionary: defineAsyncComponent(() => import('@/views/Games/Pictionary/Pictionary.vue')),
@@ -34,5 +41,6 @@ export const GAME_COMPONENTS: Record<GameType, ReturnType<typeof defineAsyncComp
     () => import('@/views/Games/MarbleMadness/MarbleMadness.vue')
   ),
   MarbleEditor: defineAsyncComponent(() => import('@/views/Games/MarbleEditor/MarbleEditor.vue')),
-  RockRunner: defineAsyncComponent(() => import('@/views/Games/RockRunner/RockRunner.vue'))
+  RockRunner: defineAsyncComponent(() => import('@/views/Games/RockRunner/RockRunner.vue')),
+  WordRunner: defineAsyncComponent(() => import('@/views/Games/WordRunner/WordRunner.vue'))
 }

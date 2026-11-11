@@ -1,6 +1,6 @@
 {
   "Lobby": {
-    "description": "Multiplayer games lobby with live chat, player presence and rooms for Pictionary, Wordle, Squares, Minigolf, Bubbles, Rhythm, Marbles, Marble Builder and Rock Runner."
+    "description": "Multiplayer games lobby with live chat, player presence and rooms for Pictionary, Minigolf, Bubbles, Rhythm, Marble Builder, Rock Runner and Word Runner."
   },
   "Pictionary": {
     "description": "Multiplayer drawing and guessing game with real-time collaboration."
