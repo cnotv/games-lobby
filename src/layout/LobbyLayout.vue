@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, useSlots } from 'vue'
+import { CircleQuestionMark, X } from 'lucide-vue-next'
 import { LobbyUIButton, LobbyUIConfirm } from '@/components/LobbyUI'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
 import '@/assets/styles/lobby-ui.scss'
@@ -79,19 +80,25 @@ const layoutStyle = computed(() => ({
       <LobbyUIButton
         v-if="hasRules"
         variant="ghost"
+        icon
+        title="Show the rules"
+        aria-label="Show the rules"
         :aria-expanded="rulesOpen"
         @click="rulesOpen = !rulesOpen"
       >
-        ?
+        <CircleQuestionMark aria-hidden="true" />
       </LobbyUIButton>
       <Transition name="ll-rules">
         <div v-if="rulesOpen" class="lobby-layout__rules-panel">
           <LobbyUIButton
             variant="ghost"
+            icon
             class="lobby-layout__rules-close"
+            title="Close the rules"
+            aria-label="Close the rules"
             @click="rulesOpen = false"
           >
-            ×
+            <X aria-hidden="true" />
           </LobbyUIButton>
           <slot name="rules" />
         </div>
