@@ -62,8 +62,8 @@ useMenuNavigation((action) => {
       <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
         &lt;
       </LobbyUIButton>
+      <GameSoundToggles />
     </div>
-    <GameSoundToggles />
     <div v-if="!fromLobby && roomId" class="game-header__room">
       <span class="game-header__room-label">Room:</span>
       <code class="game-header__room-id">{{ roomId.slice(0, 8) }}</code>
