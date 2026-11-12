@@ -79,7 +79,7 @@ describe('game audio config', () => {
   })
 
   it('has effects for each game', () => {
-    expect(Object.keys(GAME_SFX).length).toBeGreaterThanOrEqual(9)
+    expect(Object.keys(GAME_SFX).length).toBeGreaterThanOrEqual(8)
     Object.values(GAME_SFX).forEach((effects) =>
       Object.values(effects).forEach((tones) => expect(tones.length).toBeGreaterThan(0))
     )

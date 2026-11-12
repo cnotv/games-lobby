@@ -10,7 +10,6 @@ export type GameAudioId =
   | 'squares'
   | 'minigolf'
   | 'bubbles'
-  | 'rhythm'
   | 'marbles'
   | 'marbleBuilder'
   | 'wordRunner'

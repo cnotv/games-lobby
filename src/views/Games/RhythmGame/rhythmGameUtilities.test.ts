@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { midiNoteToFreq } from '@webgamekit/audio'
 import {
-  buildHitSound,
   buildScheduledNotes,
   evaluateHit,
   getHitScore,
@@ -28,19 +27,6 @@ describe('buildScheduledNotes', () => {
     // Assert
     expect(scheduledNote.time).toBe(1500)
     expect(scheduledNote.freq).toBeCloseTo(midiNoteToFreq(69) * octaveFactor)
-  })
-})
-
-describe('buildHitSound', () => {
-  it('sounds the hit note at its pitch, lowered with the tempo, for the length of the instrument note', () => {
-    const chartNote: RhythmNote = { lane: 1, midiNote: 69, time: 1500 }
-
-    const sound = buildHitSound(chartNote, 'bass', 0.5)
-
-    expect(sound.startFreq).toBeCloseTo(midiNoteToFreq(69) * 0.5 * 0.5)
-    expect(sound.endFreq).toBe(sound.startFreq)
-    expect(sound.duration).toBeCloseTo(0.22)
-    expect(sound.waveType).toBe('triangle')
   })
 })
 

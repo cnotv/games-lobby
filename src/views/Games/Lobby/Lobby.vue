@@ -542,7 +542,6 @@ onMounted(async () => {
 .lobby__game-card:focus-visible {
   outline: none;
   transform: translate(-2px, -2px);
-  border-color: var(--lui-focus-color);
   color: var(--lui-focus-color);
 }
 

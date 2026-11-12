@@ -46,6 +46,7 @@ import { gameAudioSettings, toggleGameAudioSetting } from '@/utils/gameAudio'
 .game-sound-toggles__icon {
   width: 1.5em;
   height: 1.5em;
+  filter: drop-shadow(2px 2px 0 #000);
 }
 
 /* The bar is what says "off": the icon alone cannot, since it is the same glyph either way. */
@@ -56,5 +57,6 @@ import { gameAudioSettings, toggleGameAudioSetting } from '@/utils/gameAudio'
   border-radius: var(--lui-radius-sketch-round);
   background: currentcolor;
   transform: rotate(-45deg);
+  filter: drop-shadow(2px 2px 0 #000);
 }
 </style>

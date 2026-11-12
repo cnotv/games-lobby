@@ -3,7 +3,6 @@ import { createControls, loadMapping } from '@webgamekit/controls'
 import {
   LANES,
   NOTE_SPEED_PX_PER_MS,
-  COMBO_THRESHOLDS,
   HIT_ZONE_RATIO,
   NOTE_HEIGHT,
   NOTE_RADIUS,
@@ -22,7 +21,7 @@ import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
 import { slowChartNotes, slowScheduledNotes } from './tempo'
 import { createRhythmAudio } from './rhythmAudio'
 import {
-  buildHitSound,
+  buildScheduledNotes,
   evaluateHit,
   getHitScore,
   getComboMultiplier,
@@ -33,8 +32,6 @@ import {
 } from './rhythmGameUtilities'
 import type { RgScore } from '@/stores/rhythmGame'
 import type { ScheduledNote } from '@webgamekit/audio'
-import { createSound } from '@webgamekit/audio'
-import { gameAudioSettings, playGameSound } from '@/utils/gameAudio'
 
 type Particle = { x: number; y: number; r: number; alpha: number; color: string; lane: RgLane }
 type LaneFlash = { alpha: number; result: 'perfect' | 'good' | 'miss' }
@@ -68,21 +65,14 @@ const buildSongNotes = (
   deps: GameDeps,
   tempoRate: number
 ): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
+  const gameNotes = buildScheduledNotes(chart, deps.instrument)
+  const scheduled = deps.backgroundNotes?.length
+    ? [...gameNotes, ...deps.backgroundNotes]
+    : gameNotes
   return {
     chart: slowChartNotes(chart, tempoRate),
-    scheduled: slowScheduledNotes(deps.backgroundNotes ?? [], tempoRate)
+    scheduled: slowScheduledNotes(scheduled, tempoRate)
   }
-}
-
-const playHitSounds = (
-  note: RhythmNote,
-  combo: number,
-  deps: GameDeps,
-  tempoRate: number
-): void => {
-  if (!gameAudioSettings.effects) return
-  createSound(buildHitSound(note, deps.instrument, tempoRate))
-  if ((COMBO_THRESHOLDS as readonly number[]).includes(combo)) playGameSound('rhythm', 'combo')
 }
 
 // A Strudel or uploaded song carries its difficulty in its chart already; only a built-in song is slowed here.
@@ -378,7 +368,6 @@ export const useRhythmGame = (deps: GameDeps) => {
       score.value += pts
       combo.value++
       if (combo.value > maxCombo.value) maxCombo.value = combo.value
-      playHitSounds(notes[index], combo.value, deps, tempoRate)
       if (result === 'perfect') perfect.value++
       else good.value++
     } else {

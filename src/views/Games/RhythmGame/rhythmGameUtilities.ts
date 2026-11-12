@@ -1,4 +1,4 @@
-import { midiNoteToFreq, type ScheduledNote, type SoundConfig } from '@webgamekit/audio'
+import { midiNoteToFreq, type ScheduledNote } from '@webgamekit/audio'
 import {
   HIT_WINDOW_PERFECT_MS,
   HIT_WINDOW_GOOD_MS,
@@ -11,8 +11,6 @@ import {
   type RgInstrument,
   type RhythmNote
 } from './config'
-
-const MILLISECONDS_PER_SECOND = 1000
 
 /**
  * Turns a chart into the notes the chosen instrument plays, each at the song's own pitch.
@@ -33,30 +31,6 @@ export const buildScheduledNotes = (
     waveType: preset.waveType,
     attackTime: preset.attackTimeSec
   }))
-}
-
-/**
- * The sound of one note the player hit: only a hit is heard, so a bar that passes unplayed is silent.
- * @param note - The chart note that was hit
- * @param instrument - The instrument the player picked
- * @param tempoRate - Share of full speed the song plays at, which lowers the pitch with it
- * @returns The tone to play
- */
-export const buildHitSound = (
-  note: RhythmNote,
-  instrument: RgInstrument,
-  tempoRate: number
-): SoundConfig => {
-  const preset = INSTRUMENT_PRESETS[instrument]
-  const frequency = midiNoteToFreq(note.midiNote) * preset.freqMultiplier * tempoRate
-  return {
-    startFreq: frequency,
-    endFreq: frequency,
-    duration: preset.durationMs / MILLISECONDS_PER_SECOND,
-    volume: preset.volume,
-    waveType: preset.waveType,
-    attackTime: preset.attackTimeSec
-  }
 }
 
 /**
