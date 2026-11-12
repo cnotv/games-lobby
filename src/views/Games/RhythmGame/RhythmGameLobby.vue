@@ -62,7 +62,8 @@ const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{ wav: ArrayBuffer; midi: ArrayBuffer; tracks: MidiTrackInfo[] } | null>(
   null
 )
-const strudelMessage = ref('')
+// The song is not playable until its recording is rendered, so the round cannot start before.
+const isRenderingStrudel = ref(false)
 
 const loadLibrary = async (): Promise<void> => {
   library.value = await midiStorageList()
@@ -160,7 +161,7 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
-  strudelMessage.value = `Rendering ${song.label}...`
+  isRenderingStrudel.value = true
   try {
     // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
     const { renderStrudelCodeToSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
@@ -170,12 +171,12 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
     strudelSong.value = { wav, midi, tracks }
     selectedTrackIndex.value = tracks[0].index
     emitStrudelSong(props.difficulty)
-    strudelMessage.value = ''
-  } catch (error) {
+  } catch {
     selectedStrudelId.value = null
     strudelSong.value = null
-    strudelMessage.value =
-      error instanceof Error ? error.message : 'The song could not be rendered.'
+    emit('songPicked', SONGS[0].id)
+  } finally {
+    isRenderingStrudel.value = false
   }
 }
 
@@ -186,7 +187,6 @@ const pickSong = async (songValue: string): Promise<void> => {
   }
   selectedStrudelId.value = null
   strudelSong.value = null
-  strudelMessage.value = ''
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
     selectedMidiId.value = null
@@ -270,7 +270,7 @@ const handleDelete = async (): Promise<void> => {
     :config-fields="configFields"
     :controls="CONTROLS_CONFIG"
     :show-results="showResults"
-    :can-start="true"
+    :can-start="!isRenderingStrudel"
     @update:player-name="emit('update:playerName', $event)"
     @update:player-color="emit('update:playerColor', $event)"
     @name-change="emit('nameChange')"
@@ -281,7 +281,6 @@ const handleDelete = async (): Promise<void> => {
     @play-again="emit('playAgain')"
   >
     <template #profile-extra>
-      <LobbyUIRow v-if="strudelMessage" label="Strudel" inline>{{ strudelMessage }}</LobbyUIRow>
       <LobbyUIRow v-if="isHost" label="Your MIDI" inline>
         <LobbyUIButton variant="ghost" size="sm" @click="fileInput?.click()">Upload</LobbyUIButton>
         <LobbyUIButton v-if="selectedMidiId" variant="ghost" size="sm" @click="handleDelete">
