@@ -106,6 +106,9 @@ export type BsGameContext = {
   popParticles: PopParticle[]
   score: Ref<number>
   shotCount: Ref<number>
+  level: Ref<number>
+  isLevelBreak: Ref<boolean>
+  levelBreakTimeoutId: ReturnType<typeof setTimeout> | undefined
   currentColor: Ref<BubbleColor>
   nextColor: Ref<BubbleColor>
   isGameOver: Ref<boolean>

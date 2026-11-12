@@ -1,0 +1,6 @@
+// lead: triangle, bass: sawtooth
+setcpm(30)
+stack(
+  note("c5 e5 g5 c6 e6@3").s("triangle").release(0.3).room(0.4).gain(0.7),
+  note("c3 ~ g3 ~").s("sawtooth").lpf(500).release(0.4).gain(0.35)
+)

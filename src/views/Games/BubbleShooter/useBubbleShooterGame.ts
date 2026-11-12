@@ -23,6 +23,9 @@ import {
   GAMEPAD_MAPPING,
   CONTROLS_GAME_ID,
   GAME_OVER_DELAY_MS,
+  LEVEL_BREAK_MS,
+  LEVEL_UP_SOUND,
+  LEVEL_UP_VOLUME,
   WATER_RISE_DURATION_MS,
   MATCH_POINTS_PER_BUBBLE,
   COMBO_POINTS_PER_BUBBLE,
@@ -40,6 +43,8 @@ import {
   hasReachedFireLine,
   addGarbageRows,
   addTopRows,
+  isGridEmpty,
+  levelFilledRows,
   stepGamepadAimAngle
 } from './bubbleShooterUtilities'
 import type { GameDeps, BsGameContext } from './types'
@@ -70,9 +75,11 @@ const TRAJECTORY_DOT_FADE_DISTANCE = 0.3
 const SHOOTER_HEIGHT = 0.6
 const SHOOTER_BASE_RADIUS = 0.3
 const WALL_DEPTH = 0.5
+const WALL_BEVEL = 0.06
+const WALL_COLOR = 0x8f8fc2
 const FIRE_LINE_HEIGHT = 0.08
 const PREVIEW_SCALE = 0.7
-const PREVIEW_OFFSET_X = 1.5
+const PREVIEW_INSET_X = 0.9
 const POP_PARTICLE_COUNT = 6
 const POP_LIFETIME = 0.35
 const POP_SPEED = 3.5
@@ -128,7 +135,7 @@ const buildMarbleTexture = (): THREE.CanvasTexture => {
 
 const marbleTexture = buildMarbleTexture()
 
-const ROLL_PREVIEW = new THREE.Vector3(WALL_LEFT - PREVIEW_OFFSET_X, SHOOTER_Y, 0)
+const ROLL_PREVIEW = new THREE.Vector3(WALL_LEFT + PREVIEW_INSET_X, SHOOTER_Y, 0)
 const ROLL_WAITING = new THREE.Vector3(SHOOTER_X - ROLL_WAITING_OFFSET_X, SHOOTER_Y, 0)
 const ROLL_DOCK = new THREE.Vector3(SHOOTER_X, SHOOTER_Y + SHOOTER_HEIGHT + BUBBLE_RADIUS, 0)
 
@@ -271,6 +278,35 @@ const tickTrajectoryDots = (ctx: BsGameContext, delta: number): void => {
   })
 }
 
+const buildWallFrame = (): THREE.Mesh => {
+  const outerLeft = WALL_LEFT - WALL_THICKNESS
+  const outerRight = WALL_RIGHT + WALL_THICKNESS
+  const outerTop = WALL_TOP_Y + WALL_THICKNESS
+  const outline = new THREE.Shape([
+    new THREE.Vector2(outerLeft, WALL_BOTTOM_Y),
+    new THREE.Vector2(outerLeft, outerTop),
+    new THREE.Vector2(outerRight, outerTop),
+    new THREE.Vector2(outerRight, WALL_BOTTOM_Y),
+    new THREE.Vector2(WALL_RIGHT, WALL_BOTTOM_Y),
+    new THREE.Vector2(WALL_RIGHT, WALL_TOP_Y),
+    new THREE.Vector2(WALL_LEFT, WALL_TOP_Y),
+    new THREE.Vector2(WALL_LEFT, WALL_BOTTOM_Y)
+  ])
+  const geometry = new THREE.ExtrudeGeometry(outline, {
+    depth: WALL_DEPTH,
+    bevelEnabled: true,
+    bevelSize: WALL_BEVEL,
+    bevelThickness: WALL_BEVEL,
+    bevelOffset: -WALL_BEVEL,
+    bevelSegments: 3
+  })
+  geometry.translate(0, 0, -WALL_DEPTH / 2)
+  return new THREE.Mesh(
+    geometry,
+    new THREE.MeshStandardMaterial({ color: WALL_COLOR, roughness: 0.7, metalness: 0 })
+  )
+}
+
 const buildStaticScene = (
   ctx: BsGameContext,
   sc: THREE.Scene,
@@ -285,24 +321,7 @@ const buildStaticScene = (
   dirLight.position.set(5, 10, 10)
   sc.add(dirLight)
 
-  const surfaceMat = new THREE.MeshStandardMaterial({ color: 0x2a2a4e })
-  const ceilingWidth = WALL_RIGHT - WALL_LEFT + WALL_THICKNESS
-  const ceiling = new THREE.Mesh(
-    new THREE.BoxGeometry(ceilingWidth, WALL_THICKNESS, WALL_DEPTH),
-    surfaceMat
-  )
-  ceiling.position.set(0, WALL_TOP_Y + WALL_THICKNESS / 2, 0)
-  sc.add(ceiling)
-
-  const wallHeight = WALL_TOP_Y - WALL_BOTTOM_Y
-  const wallGeo = new THREE.BoxGeometry(WALL_THICKNESS, wallHeight, WALL_DEPTH)
-  const wallCenterY = (WALL_TOP_Y + WALL_BOTTOM_Y) / 2
-  const wallL = new THREE.Mesh(wallGeo, surfaceMat)
-  wallL.position.set(WALL_LEFT - WALL_THICKNESS / 2, wallCenterY, 0)
-  sc.add(wallL)
-  const wallR = new THREE.Mesh(wallGeo, surfaceMat)
-  wallR.position.set(WALL_RIGHT + WALL_THICKNESS / 2, wallCenterY, 0)
-  sc.add(wallR)
+  sc.add(buildWallFrame())
 
   const fireLineMat = new THREE.MeshStandardMaterial({
     color: 0xff4444,
@@ -615,6 +634,10 @@ const resetContextAndHandles = (ctx: BsGameContext, handles: SessionHandles): vo
   handles.lastTime = 0
   ctx.score.value = 0
   ctx.shotCount.value = 0
+  ctx.level.value = 1
+  ctx.isLevelBreak.value = false
+  clearTimeout(ctx.levelBreakTimeoutId)
+  ctx.levelBreakTimeoutId = undefined
   ctx.isGameOver.value = false
   ctx.pendingGarbage.value = 0
   ctx.rowDropAccumulator = 0
@@ -664,6 +687,31 @@ const worldToScreenPercent = (
 ): { xPercent: number; yPercent: number } => {
   const projected = new THREE.Vector3(x, y, 0).project(camera)
   return { xPercent: ((projected.x + 1) / 2) * 100, yPercent: ((1 - projected.y) / 2) * 100 }
+}
+
+const playLevelUpSound = (): void => {
+  const sound = new Audio(LEVEL_UP_SOUND)
+  sound.volume = LEVEL_UP_VOLUME
+  sound.play().catch(() => undefined)
+}
+
+const loadNextLevelGrid = (ctx: BsGameContext): void => {
+  ctx.grid = createGrid(levelFilledRows(ctx.level.value), ctx.deps.colorCount.value)
+  ctx.rowDropAccumulator = 0
+  rebuildAllMeshes(ctx)
+  ctx.currentColor.value = pickNextColor(ctx.grid)
+  ctx.nextColor.value = pickNextColor(ctx.grid)
+  if (ctx.loadedMesh) ctx.loadedMesh.material = getMaterial(ctx, ctx.currentColor.value)
+  if (ctx.nextMesh) ctx.nextMesh.material = getMaterial(ctx, ctx.nextColor.value)
+  computeTrajectoryPoints(ctx)
+  ctx.isLevelBreak.value = false
+}
+
+const startLevelBreak = (ctx: BsGameContext): void => {
+  ctx.level.value++
+  ctx.isLevelBreak.value = true
+  playLevelUpSound()
+  ctx.levelBreakTimeoutId = setTimeout(() => loadNextLevelGrid(ctx), LEVEL_BREAK_MS)
 }
 
 const handleCollision = (
@@ -719,6 +767,8 @@ const handleCollision = (
 
   ctx.shotCount.value++
 
+  if (isGridEmpty(ctx.grid)) startLevelBreak(ctx)
+
   if (hasReachedFireLine(ctx.grid, FIRE_LINE_Y)) {
     ctx.onGameOverInternal()
     return
@@ -741,7 +791,7 @@ const runGameLoop = (ctx: BsGameContext, delta: number): void => {
   tickPopParticles(ctx, delta)
   tickTrajectoryDots(ctx, delta)
 
-  if (!ctx.isGameOver.value) {
+  if (!ctx.isGameOver.value && !ctx.isLevelBreak.value) {
     ctx.rowDropAccumulator += delta * 1000
     const rowDropMs = SPEED_ROW_DROP_MS[ctx.deps.speed.value]
     if (ctx.rowDropAccumulator >= rowDropMs) {
@@ -828,7 +878,7 @@ const applyAim = (ctx: BsGameContext, angle: number): void => {
 }
 
 const shoot = (ctx: BsGameContext): void => {
-  if (ctx.isFlying || ctx.isGameOver.value || !ctx.scene) return
+  if (ctx.isFlying || ctx.isGameOver.value || ctx.isLevelBreak.value || !ctx.scene) return
   const color = ctx.currentColor.value
   const mesh = new THREE.Mesh(ctx.bubbleGeo, getMaterial(ctx, color))
   mesh.position.set(SHOOTER_X, SHOOTER_Y + SHOOTER_HEIGHT, 0)
@@ -978,6 +1028,8 @@ const createGameRenderer = (
 export const useBubbleShooterGame = (deps: GameDeps) => {
   const score = ref(0)
   const shotCount = ref(0)
+  const level = ref(1)
+  const isLevelBreak = ref(false)
   const currentColor = ref<BubbleColor>('red')
   const nextColor = ref<BubbleColor>('blue')
   const isGameOver = ref(false)
@@ -1017,6 +1069,9 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
     popParticles: [],
     score,
     shotCount,
+    level,
+    isLevelBreak,
+    levelBreakTimeoutId: undefined,
     currentColor,
     nextColor,
     isGameOver,
@@ -1114,6 +1169,8 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
   return {
     score,
     shotCount,
+    level,
+    isLevelBreak,
     currentColor,
     nextColor,
     isGameOver,
