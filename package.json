@@ -66,7 +66,7 @@
     "@webgamekit/dictionary": "^0.1.0",
     "@webgamekit/history": "^0.1.0",
     "@webgamekit/logic": "^0.1.0",
-    "@webgamekit/multiplayer-p2p": "^0.1.0",
+    "@webgamekit/multiplayer-p2p": "^0.1.1",
     "@webgamekit/strudel-flow": "workspace:*",
     "@webgamekit/threejs": "^0.1.0",
     "pinia": "^2.3.0",
