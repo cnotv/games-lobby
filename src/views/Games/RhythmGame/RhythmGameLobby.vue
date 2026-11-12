@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { LobbyUIButton, LobbyUIRow, LobbyUIWizard } from '@/components/LobbyUI'
 import '@/assets/styles/lobby-ui.scss'
 import RhythmGameSummary from './RhythmGameSummary.vue'
@@ -15,6 +15,7 @@ import {
 } from './midiStorage'
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
 import { buildLiveSongCode, buildStrudelChart, listStrudelTracks } from './strudelSong'
+import { strudelSongNotes } from './strudelNotesCache'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgSong, RhythmNote } from './config'
@@ -79,7 +80,27 @@ const loadStrudelSongs = async (): Promise<void> => {
   strudelSongs.value = ELECTRO_TUNES
 }
 
-onMounted(() => Promise.all([loadLibrary(), loadStrudelSongs()]))
+const lobbyClosed = { value: false }
+const ACTIVATION_EVENTS = ['pointerdown', 'keydown'] as const
+
+// Writing every song's notes ahead makes a pick instant, and stops when the lobby closes so it
+// never competes with a round's song for the engine. It waits for the player's first click or key:
+// the engine cannot start audio before one, and would wait for it with every pick queued behind.
+const writeSongsAhead = (): void => {
+  ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
+  void strudelSongNotes.prefetch(strudelSongs.value, () => lobbyClosed.value)
+}
+
+onMounted(async () => {
+  await Promise.all([loadLibrary(), loadStrudelSongs()])
+  if (lobbyClosed.value) return
+  if (navigator.userActivation?.hasBeenActive) writeSongsAhead()
+  else ACTIVATION_EVENTS.forEach((name) => window.addEventListener(name, writeSongsAhead))
+})
+onUnmounted(() => {
+  lobbyClosed.value = true
+  ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
+})
 
 const selectedEntry = computed(() => library.value.find((e) => e.id === selectedMidiId.value))
 const availableTracks = computed(
@@ -177,9 +198,7 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   renderingStrudelId.value = strudelId
   const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
   try {
-    // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
-    const { renderStrudelCodeToNotes } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
-    const { midi, cyclesPerSecond } = await renderStrudelCodeToNotes(song.code)
+    const { midi, cyclesPerSecond } = await strudelSongNotes.notesFor(song.id, song.code)
     if (!isStillPicked()) return
     const tracks = listStrudelTracks(midi)
     if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
