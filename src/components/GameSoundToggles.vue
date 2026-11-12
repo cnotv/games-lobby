@@ -8,6 +8,7 @@ import { gameAudioSettings, toggleGameAudioSetting } from '@/utils/gameAudio'
   <div class="game-sound-toggles">
     <LobbyUIButton
       variant="ghost"
+      size="sm"
       :title="gameAudioSettings.music ? 'Turn the music off' : 'Turn the music on'"
       :aria-label="gameAudioSettings.music ? 'Turn the music off' : 'Turn the music on'"
       :aria-pressed="gameAudioSettings.music"
@@ -22,6 +23,7 @@ import { gameAudioSettings, toggleGameAudioSetting } from '@/utils/gameAudio'
     </LobbyUIButton>
     <LobbyUIButton
       variant="ghost"
+      size="sm"
       :title="gameAudioSettings.effects ? 'Turn the sounds off' : 'Turn the sounds on'"
       :aria-label="gameAudioSettings.effects ? 'Turn the sounds off' : 'Turn the sounds on'"
       :aria-pressed="gameAudioSettings.effects"
