@@ -22,7 +22,7 @@ import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
 import { slowChartNotes, slowScheduledNotes } from './tempo'
 import { createRhythmAudio } from './rhythmAudio'
 import {
-  buildScheduledNotes,
+  buildHitSound,
   evaluateHit,
   getHitScore,
   getComboMultiplier,
@@ -33,7 +33,8 @@ import {
 } from './rhythmGameUtilities'
 import type { RgScore } from '@/stores/rhythmGame'
 import type { ScheduledNote } from '@webgamekit/audio'
-import { playGameSound } from '@/utils/gameAudio'
+import { createSound } from '@webgamekit/audio'
+import { gameAudioMuted, playGameSound } from '@/utils/gameAudio'
 
 type Particle = { x: number; y: number; r: number; alpha: number; color: string; lane: RgLane }
 type LaneFlash = { alpha: number; result: 'perfect' | 'good' | 'miss' }
@@ -67,17 +68,20 @@ const buildSongNotes = (
   deps: GameDeps,
   tempoRate: number
 ): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
-  const gameNotes = buildScheduledNotes(chart, deps.instrument)
-  const scheduled = deps.backgroundNotes?.length
-    ? [...gameNotes, ...deps.backgroundNotes]
-    : gameNotes
   return {
     chart: slowChartNotes(chart, tempoRate),
-    scheduled: slowScheduledNotes(scheduled, tempoRate)
+    scheduled: slowScheduledNotes(deps.backgroundNotes ?? [], tempoRate)
   }
 }
 
-const playComboSound = (combo: number): void => {
+const playHitSounds = (
+  note: RhythmNote,
+  combo: number,
+  deps: GameDeps,
+  tempoRate: number
+): void => {
+  if (gameAudioMuted.value) return
+  createSound(buildHitSound(note, deps.instrument, tempoRate))
   if ((COMBO_THRESHOLDS as readonly number[]).includes(combo)) playGameSound('rhythm', 'combo')
 }
 
@@ -122,7 +126,6 @@ const spawnParticles = (
   const cx = laneW * lane + laneW / 2
   const cy = canvas.height * HIT_ZONE_RATIO
   const count = result === 'perfect' ? 8 : result === 'good' ? 5 : 3
-  if (result === 'miss') playGameSound('rhythm', 'miss')
   const color = result === 'miss' ? '#ff4040' : LANE_COLORS[lane]
   Array.from({ length: count }, () => {
     particles.push({ x: cx, y: cy, r: 4 + Math.random() * 6, alpha: 1, color, lane })
@@ -375,7 +378,7 @@ export const useRhythmGame = (deps: GameDeps) => {
       score.value += pts
       combo.value++
       if (combo.value > maxCombo.value) maxCombo.value = combo.value
-      playComboSound(combo.value)
+      playHitSounds(notes[index], combo.value, deps, tempoRate)
       if (result === 'perfect') perfect.value++
       else good.value++
     } else {

@@ -788,15 +788,6 @@ export const GAME_SFX: Partial<Record<GameAudioId, Record<string, SfxDefinition>
     ]
   },
   rhythm: {
-    miss: [
-      {
-        waveType: 'sawtooth',
-        startFrequency: 160,
-        endFrequency: 90,
-        durationSeconds: 0.14,
-        volume: 0.1
-      }
-    ],
     combo: [
       {
         waveType: 'square',
