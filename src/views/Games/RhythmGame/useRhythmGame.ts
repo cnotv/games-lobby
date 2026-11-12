@@ -51,6 +51,9 @@ type GameDeps = {
   startAt: number
   customNotes?: RhythmNote[] | null
   backgroundNotes?: ScheduledNote[] | null
+  /** The recording of a song that was rendered rather than shipped. */
+  customBacking?: ArrayBuffer | null
+  customTempoRate?: number
   onScoreUpdate: (data: RgScore) => void
   onSongEnd: () => void
 }
@@ -75,9 +78,9 @@ const buildSongNotes = (
   }
 }
 
-// A Strudel or uploaded song carries its difficulty in its chart already; only a built-in song is slowed here.
+// An uploaded song plays as written; the lobby sets the rate of a song it rendered.
 const resolveTempoRate = (deps: GameDeps): number =>
-  deps.song === 'custom' ? 1 : DIFFICULTY_TEMPO[deps.difficulty]
+  deps.song === 'custom' ? (deps.customTempoRate ?? 1) : DIFFICULTY_TEMPO[deps.difficulty]
 
 const buildControlsMapping = (
   laneActive: Ref<boolean[]>,
@@ -424,7 +427,9 @@ export const useRhythmGame = (deps: GameDeps) => {
 
   // A missing backing track is only a quieter round, so the notes play on without it.
   const startBackingTrack = async (): Promise<void> => {
-    const backing = await fetchSongBacking(deps.song).catch(() => null)
+    // Decoding takes ownership of the bytes, so a rendered recording is handed over as a copy.
+    const backing =
+      deps.customBacking?.slice(0) ?? (await fetchSongBacking(deps.song).catch(() => null))
     if (backing === null || isDestroyed) return
     await startBacking(backing)
   }

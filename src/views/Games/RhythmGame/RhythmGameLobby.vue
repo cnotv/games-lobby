@@ -4,7 +4,7 @@ import { LobbyUIButton, LobbyUIRow, LobbyUIWizard } from '@/components/LobbyUI'
 import '@/assets/styles/lobby-ui.scss'
 import RhythmGameSummary from './RhythmGameSummary.vue'
 import type { LobbyConfigField, LobbyPlayer } from '@/types/lobbyWizard'
-import { MATCHMAKER_ROOM, CONTROLS_CONFIG, DIFFICULTIES, SONGS } from './config'
+import { MATCHMAKER_ROOM, CONTROLS_CONFIG, DIFFICULTIES, DIFFICULTY_TEMPO, SONGS } from './config'
 import type { RgPlayer } from '@/stores/rhythmGame'
 import {
   midiStorageList,
@@ -14,9 +14,9 @@ import {
   type MidiLibraryEntry
 } from './midiStorage'
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
-import { buildStrudelSong } from './strudelSong'
+import { buildStrudelChart, listStrudelTracks } from './strudelSong'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
-import type { ScheduledNote } from '@webgamekit/audio'
+import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgSong, RhythmNote } from './config'
 
 const props = defineProps<{
@@ -41,7 +41,13 @@ const emit = defineEmits<{
   matchFound: [roomId: string]
   leaveRoom: []
   playAgain: []
-  midiParsed: [gameNotes: RhythmNote[], backgroundNotes: ScheduledNote[], songName: string]
+  midiParsed: [
+    gameNotes: RhythmNote[],
+    backgroundNotes: ScheduledNote[],
+    songName: string,
+    backing?: ArrayBuffer | null,
+    tempoRate?: number
+  ]
   songPicked: [song: RgSong]
   'update:difficulty': [difficulty: RgDifficulty]
 }>()
@@ -53,7 +59,9 @@ const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
 const strudelSongs = ref<StrudelExample[]>([])
 const selectedStrudelId = ref<string | null>(null)
-const strudelMidi = ref<{ id: string; buffer: ArrayBuffer } | null>(null)
+const strudelSong = ref<{ wav: ArrayBuffer; midi: ArrayBuffer; tracks: MidiTrackInfo[] } | null>(
+  null
+)
 const strudelMessage = ref('')
 
 const loadLibrary = async (): Promise<void> => {
@@ -69,7 +77,9 @@ const loadStrudelSongs = async (): Promise<void> => {
 onMounted(() => Promise.all([loadLibrary(), loadStrudelSongs()]))
 
 const selectedEntry = computed(() => library.value.find((e) => e.id === selectedMidiId.value))
-const availableTracks = computed(() => selectedEntry.value?.tracks ?? [])
+const availableTracks = computed(
+  () => strudelSong.value?.tracks ?? selectedEntry.value?.tracks ?? []
+)
 
 const songField = computed(
   (): LobbyConfigField => ({
@@ -140,9 +150,9 @@ const resolveTrackLabel = (midiId: string, trackIndex: number): string => {
 
 const emitStrudelSong = (difficulty: RgDifficulty): void => {
   const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
-  if (song === undefined || strudelMidi.value === null) return
-  const { chart, background } = buildStrudelSong(strudelMidi.value.buffer, difficulty)
-  emit('midiParsed', chart, background, song.label)
+  if (song === undefined || strudelSong.value === null) return
+  const chart = buildStrudelChart(strudelSong.value.midi, selectedTrackIndex.value, difficulty)
+  emit('midiParsed', chart, [], song.label, strudelSong.value.wav, DIFFICULTY_TEMPO[difficulty])
 }
 
 const pickStrudelSong = async (strudelId: string): Promise<void> => {
@@ -153,12 +163,17 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   strudelMessage.value = `Rendering ${song.label}...`
   try {
     // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
-    const { renderStrudelCodeToMidi } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
-    strudelMidi.value = { id: strudelId, buffer: await renderStrudelCodeToMidi(song.code) }
+    const { renderStrudelCodeToSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
+    const { wav, midi } = await renderStrudelCodeToSong(song.code)
+    const tracks = listStrudelTracks(midi)
+    if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
+    strudelSong.value = { wav, midi, tracks }
+    selectedTrackIndex.value = tracks[0].index
     emitStrudelSong(props.difficulty)
     strudelMessage.value = ''
   } catch (error) {
     selectedStrudelId.value = null
+    strudelSong.value = null
     strudelMessage.value =
       error instanceof Error ? error.message : 'The song could not be rendered.'
   }
@@ -170,6 +185,7 @@ const pickSong = async (songValue: string): Promise<void> => {
     return
   }
   selectedStrudelId.value = null
+  strudelSong.value = null
   strudelMessage.value = ''
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
@@ -192,6 +208,11 @@ const pickDifficulty = (difficultyValue: string): void => {
 }
 
 const pickTrack = async (trackIndex: number): Promise<void> => {
+  if (selectedStrudelId.value !== null) {
+    selectedTrackIndex.value = trackIndex
+    emitStrudelSong(props.difficulty)
+    return
+  }
   if (!selectedMidiId.value) return
   selectedTrackIndex.value = trackIndex
   await loadAndEmit(
@@ -219,6 +240,7 @@ const handleFileChange = async (event: Event): Promise<void> => {
   const firstTrack = tracks[0]
   if (!firstTrack) return
   selectedStrudelId.value = null
+  strudelSong.value = null
   selectedMidiId.value = id
   selectedTrackIndex.value = firstTrack.index
   const trackLabel = tracks.length > 1 ? `${name} — ${firstTrack.name}` : name

@@ -643,25 +643,25 @@ export const renderStrudelCodeToWav = async (patternCode: string): Promise<Array
 }
 
 /**
- * Renders a whole song's notes to MIDI, outside the editor's own playback and without playing a
- * sound, so a game can chart a pattern from the editor's Songs.
+ * Renders a whole song to a recording and to its notes, outside the editor's own playback and
+ * without playing a sound, so a game can play the song and chart one of its instruments.
  * @param patternCode - Strudel code that sets its own tempo
- * @returns the MIDI file, covering one full play of the song
+ * @returns the WAV and the MIDI file, each covering one full play of the song
  * @throws {Error} when the code does not render
  */
-export const renderStrudelCodeToMidi = async (patternCode: string): Promise<ArrayBuffer> => {
+export const renderStrudelCodeToSong = async (
+  patternCode: string
+): Promise<{ wav: ArrayBuffer; midi: ArrayBuffer }> => {
   await prepareInstrumentsForCode(patternCode)
   const playback = await loadSilentPlayback()
   const cycles = (await playback.measureRepetition(patternCode)) ?? STRUDEL_MAX_SONG_CYCLES
-  const result = await playback.renderToMidiBytes(patternCode, {
-    ...EXPORT_DEFAULT_OPTIONS,
-    format: 'midi',
-    endCycle: cycles
-  })
-  if (!result.success || result.file === undefined) {
-    throw new Error(result.errorMessage ?? 'The code did not render.')
+  const range = { ...EXPORT_DEFAULT_OPTIONS, endCycle: cycles }
+  const wav = await playback.renderToWavBytes(patternCode, range)
+  const midi = await playback.renderToMidiBytes(patternCode, { ...range, format: 'midi' })
+  if (!wav.success || wav.file === undefined || !midi.success || midi.file === undefined) {
+    throw new Error(wav.errorMessage ?? midi.errorMessage ?? 'The code did not render.')
   }
-  return result.file
+  return { wav: wav.file, midi: midi.file }
 }
 
 /**

@@ -1,8 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { Midi } from '@tonejs/midi'
-import { buildStrudelSong } from './strudelSong'
-import { DIFFICULTY_TEMPO } from './config'
+import { listStrudelTracks, buildStrudelChart } from './strudelSong'
 
 const DRUM_CHANNEL = 9
 
@@ -14,42 +13,46 @@ const buildMidi = (): ArrayBuffer => {
     drums.addNote({ midi: 36, time: index * 0.5, duration: 0.1 })
   )
   const bass = midi.addTrack()
+  bass.name = 'bass'
   bass.addNote({ midi: 40, time: 0, duration: 1 })
   const lead = midi.addTrack()
+  lead.name = 'lead'
   Array.from({ length: 6 }, (_, index) =>
-    lead.addNote({ midi: 60 + index, time: index * 1, duration: 0.5 })
+    lead.addNote({ midi: 60 + index, time: index, duration: 0.5 })
   )
   const bytes = midi.toArray()
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
 }
 
-describe('buildStrudelSong', () => {
-  it('charts the pitched track with the most notes, never the drums', () => {
-    const { chart } = buildStrudelSong(buildMidi(), 'hard')
-    expect(chart.map((note) => note.midiNote)).toEqual([60, 61, 62, 63, 64, 65])
+describe('listStrudelTracks', () => {
+  it('lists the pitched tracks, the busiest first, and never the drums', () => {
+    const tracks = listStrudelTracks(buildMidi())
+    expect(tracks.map((track) => [track.name, track.noteCount])).toEqual([
+      ['lead', 6],
+      ['bass', 1]
+    ])
   })
 
-  it('plays every pitched track behind the chart and leaves the drums out', () => {
-    const { background } = buildStrudelSong(buildMidi(), 'hard')
-    expect(background).toHaveLength(7)
-  })
-
-  it.each(['easy', 'medium', 'hard'] as const)('slows the %s chart by its tempo', (difficulty) => {
-    const { chart } = buildStrudelSong(buildMidi(), difficulty)
-    expect(chart[1].time).toBe(Math.round(1000 / DIFFICULTY_TEMPO[difficulty]))
-  })
-
-  it('refuses a song with no pitched notes', () => {
+  it('lists nothing for a song with only drums', () => {
     const midi = new Midi()
     const drums = midi.addTrack()
     drums.channel = DRUM_CHANNEL
     drums.addNote({ midi: 36, time: 0, duration: 0.1 })
     const bytes = midi.toArray()
-    expect(() =>
-      buildStrudelSong(
-        bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength),
-        'hard'
-      )
-    ).toThrow('no pitched notes')
+    expect(
+      listStrudelTracks(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength))
+    ).toEqual([])
+  })
+})
+
+describe('buildStrudelChart', () => {
+  it('charts only the track that was picked, at its own tempo', () => {
+    const buffer = buildMidi()
+    const [lead, bass] = listStrudelTracks(buffer)
+
+    expect(buildStrudelChart(buffer, lead.index, 'hard').map((note) => note.midiNote)).toEqual([
+      60, 61, 62, 63, 64, 65
+    ])
+    expect(buildStrudelChart(buffer, bass.index, 'hard')).toHaveLength(1)
   })
 })

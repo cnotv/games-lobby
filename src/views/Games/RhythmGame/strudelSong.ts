@@ -1,56 +1,31 @@
 import { Midi } from '@tonejs/midi'
-import { midiNoteToFreq, type ScheduledNote } from '@webgamekit/audio'
-import { DIFFICULTY_TEMPO, type RgDifficulty, type RhythmNote } from './config'
+import type { MidiTrackInfo } from '@webgamekit/audio'
+import type { RgDifficulty, RhythmNote } from './config'
 import { parseMidiTrack } from './parseMidi'
-import { slowChartNotes, slowScheduledNotes } from './tempo'
-
-const MILLISECONDS_PER_SECOND = 1000
-const BACKGROUND_VOLUME = 0.1
-
-type Track = Midi['tracks'][number]
 
 /**
- * Turns a Strudel song's MIDI export into a chart and the music that plays behind it: the pitched
- * track with the most notes becomes the chart, every pitched track plays behind it, and the
- * drums, which have no melody to chase, are left out. The difficulty sets how dense the chart is
- * and how slowly the whole song plays.
+ * The tracks of a Strudel song a player can chase: the pitched ones, busiest first. The drums are
+ * left out, since they have no melody to follow.
  * @param midiBuffer - The song as a MIDI file
- * @param difficulty - The difficulty the song is played at
- * @returns The chart and the notes to schedule behind it, both at the difficulty's tempo
- * @throws {Error} when the song has no pitched notes
+ * @returns Each track's index in the file, name and note count
  */
-export const buildStrudelSong = (
+export const listStrudelTracks = (midiBuffer: ArrayBuffer): MidiTrackInfo[] =>
+  new Midi(midiBuffer).tracks
+    .map((track, index) => ({ index, name: track.name, noteCount: track.notes.length, track }))
+    .filter(({ track, noteCount }) => noteCount > 0 && !track.instrument.percussion)
+    .map(({ index, name, noteCount }) => ({ index, name, noteCount }))
+    .sort((left, right) => right.noteCount - left.noteCount)
+
+/**
+ * The falling notes of one track of a Strudel song. The whole song plays from its rendered
+ * recording, so only the picked track becomes the chart.
+ * @param midiBuffer - The song as a MIDI file
+ * @param trackIndex - The track to chart, from `listStrudelTracks`
+ * @param difficulty - Sets how dense the chart is
+ * @returns The chart, at the song's own tempo
+ */
+export const buildStrudelChart = (
   midiBuffer: ArrayBuffer,
+  trackIndex: number,
   difficulty: RgDifficulty
-): { chart: RhythmNote[]; background: ScheduledNote[] } => {
-  const midi = new Midi(midiBuffer)
-  const pitchedTracks = midi.tracks.filter(
-    (track: Track) => track.notes.length > 0 && !track.instrument.percussion
-  )
-  const melody = pitchedTracks.reduce<Track | null>(
-    (best, track) => (best === null || track.notes.length > best.notes.length ? track : best),
-    null
-  )
-  if (melody === null) throw new Error('This song has no pitched notes to play')
-  const tempoRate = DIFFICULTY_TEMPO[difficulty]
-  const background = pitchedTracks.flatMap((track) =>
-    track.notes.map(
-      (note): ScheduledNote => ({
-        time: note.time * MILLISECONDS_PER_SECOND,
-        freq: midiNoteToFreq(note.midi),
-        duration: note.duration * MILLISECONDS_PER_SECOND,
-        volume: BACKGROUND_VOLUME
-      })
-    )
-  )
-  return {
-    chart: slowChartNotes(
-      parseMidiTrack(midiBuffer, midi.tracks.indexOf(melody), difficulty),
-      tempoRate
-    ),
-    background: slowScheduledNotes(
-      [...background].sort((left, right) => left.time - right.time),
-      tempoRate
-    )
-  }
-}
+): RhythmNote[] => parseMidiTrack(midiBuffer, trackIndex, difficulty)

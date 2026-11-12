@@ -696,18 +696,18 @@ export const GAME_SFX: Partial<Record<GameAudioId, Record<string, SfxDefinition>
     ],
     ceilingDrop: [
       {
-        waveType: 'sawtooth',
-        startFrequency: 220,
-        endFrequency: 45,
-        durationSeconds: 0.5,
-        volume: 0.2
+        waveType: 'sine',
+        startFrequency: 523,
+        endFrequency: 392,
+        durationSeconds: 0.25,
+        volume: 0.12
       },
       {
-        waveType: 'triangle',
-        startFrequency: 90,
-        endFrequency: 40,
-        durationSeconds: 0.35,
-        volume: 0.22,
+        waveType: 'sine',
+        startFrequency: 392,
+        endFrequency: 294,
+        durationSeconds: 0.3,
+        volume: 0.1,
         delaySeconds: 0.12
       }
     ],
