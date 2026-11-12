@@ -2,8 +2,10 @@ import { describe, expect, it, beforeEach, vi } from 'vitest'
 import {
   noteNameToFrequency,
   scheduleMusicTones,
-  isGameAudioMuted,
-  setGameAudioMuted,
+  gameAudioSettings,
+  toggleGameAudioSetting,
+  startGameMusic,
+  stopGameMusic,
   playGameSound
 } from './gameAudio'
 import { GAME_MUSIC, GAME_SFX } from '@/config/gameAudio'
@@ -84,23 +86,32 @@ describe('game audio config', () => {
   })
 })
 
-describe('mute', () => {
+describe('sound settings', () => {
   const AudioContextSpy = vi.fn()
 
   beforeEach(() => {
     AudioContextSpy.mockClear()
     vi.stubGlobal('AudioContext', AudioContextSpy)
-    setGameAudioMuted(false)
+    gameAudioSettings.music = true
+    gameAudioSettings.effects = true
   })
 
-  it('remembers the setting', () => {
-    setGameAudioMuted(true)
-    expect(isGameAudioMuted()).toBe(true)
+  it('switches music and effects on their own and remembers each', () => {
+    toggleGameAudioSetting('effects')
+    expect(gameAudioSettings).toEqual({ music: true, effects: false })
+    expect(localStorage.getItem('games-audio-settings')).toBe('{"music":true,"effects":false}')
   })
 
-  it('never touches the audio hardware while muted', () => {
-    setGameAudioMuted(true)
+  it('never touches the audio hardware with the effects off', () => {
+    gameAudioSettings.effects = false
     playGameSound('pictionary', 'correct')
     expect(AudioContextSpy).not.toHaveBeenCalled()
+  })
+
+  it('never touches the audio hardware with the music off', () => {
+    gameAudioSettings.music = false
+    startGameMusic('pictionary')
+    expect(AudioContextSpy).not.toHaveBeenCalled()
+    stopGameMusic()
   })
 })

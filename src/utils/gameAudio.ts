@@ -1,9 +1,15 @@
-import { ref } from 'vue'
+import { reactive } from 'vue'
 import { GAME_MUSIC, GAME_SFX } from '@/config/gameAudio'
 import { readStorage, writeStorage } from '@/utils/storage'
-import type { GameAudioId, MusicTrack, ScheduledTone, SfxTone } from '@/types/gameAudio'
+import type {
+  GameAudioId,
+  MusicTrack,
+  ScheduledTone,
+  SfxTone,
+  SoundSettings
+} from '@/types/gameAudio'
 
-const MUTE_STORAGE_KEY = 'games-audio-muted'
+const SETTINGS_STORAGE_KEY = 'games-audio-settings'
 const SEMITONES: Record<string, number> = { c: 0, d: 2, e: 4, f: 5, g: 7, a: 9, b: 11 }
 const NOTE_NAME_PATTERN = /^([a-g])(#|b)?(\d)$/
 const EIGHTH_NOTES_PER_BEAT = 2
@@ -13,15 +19,29 @@ const BASS_VOLUME = 0.07
 const LOOP_LOOKAHEAD_SECONDS = 0.3
 const MILLISECONDS_PER_SECOND = 1000
 
-/** True while sound is off; read by the mute button and persisted between visits. */
-export const gameAudioMuted = ref(readStorage(MUTE_STORAGE_KEY) === 'true')
+const readStoredSettings = (): SoundSettings => {
+  try {
+    const stored: unknown = JSON.parse(readStorage(SETTINGS_STORAGE_KEY) ?? '{}')
+    const record = typeof stored === 'object' && stored !== null ? stored : {}
+    return {
+      music: !('music' in record && record.music === false),
+      effects: !('effects' in record && record.effects === false)
+    }
+  } catch {
+    return { music: true, effects: true }
+  }
+}
+
+/** What is switched on, for every game: Rock Runner's own sounds follow it too. */
+export const gameAudioSettings = reactive<SoundSettings>(readStoredSettings())
 
 const audioState: {
   context: AudioContext | null
   musicTimer: ReturnType<typeof setTimeout> | null
+  musicBus: GainNode | null
   musicGame: GameAudioId | null
   musicPlaying: boolean
-} = { context: null, musicTimer: null, musicGame: null, musicPlaying: false }
+} = { context: null, musicTimer: null, musicBus: null, musicGame: null, musicPlaying: false }
 
 /**
  * The pitch of a note name.
@@ -69,7 +89,6 @@ export const scheduleMusicTones = (track: MusicTrack): ScheduledTone[] => {
 }
 
 const getContext = (): AudioContext | null => {
-  if (gameAudioMuted.value) return null
   audioState.context ??= new AudioContext()
   if (audioState.context.state === 'suspended') audioState.context.resume().catch(() => undefined)
   return audioState.context
@@ -81,7 +100,8 @@ const playTone = (
     SfxTone,
     'waveType' | 'startFrequency' | 'endFrequency' | 'durationSeconds' | 'volume'
   >,
-  startTime: number
+  startTime: number,
+  destination: AudioNode
 ): void => {
   const oscillator = context.createOscillator()
   const gain = context.createGain()
@@ -95,7 +115,7 @@ const playTone = (
   gain.gain.exponentialRampToValueAtTime(tone.volume, startTime + 0.01)
   gain.gain.exponentialRampToValueAtTime(0.0001, startTime + tone.durationSeconds)
   oscillator.connect(gain)
-  gain.connect(context.destination)
+  gain.connect(destination)
   oscillator.start(startTime)
   oscillator.stop(startTime + tone.durationSeconds + 0.02)
 }
@@ -106,18 +126,28 @@ const playTone = (
  * @param effectName - The interaction, such as `correct` or `bounce`
  */
 export const playGameSound = (game: GameAudioId, effectName: string): void => {
-  const effect = GAME_SFX[game]?.[effectName]
+  const effect = gameAudioSettings.effects ? GAME_SFX[game]?.[effectName] : undefined
   const context = effect === undefined ? null : getContext()
   if (effect === undefined || context === null) return
-  effect.forEach((tone) => playTone(context, tone, context.currentTime + (tone.delaySeconds ?? 0)))
+  effect.forEach((tone) =>
+    playTone(context, tone, context.currentTime + (tone.delaySeconds ?? 0), context.destination)
+  )
 }
 
+// A loop's notes are all scheduled ahead of time, so silencing them means cutting the bus they share.
 const stopMusicTimer = (): void => {
   if (audioState.musicTimer !== null) clearTimeout(audioState.musicTimer)
   audioState.musicTimer = null
+  audioState.musicBus?.disconnect()
+  audioState.musicBus = null
 }
 
-const scheduleLoop = (context: AudioContext, track: MusicTrack, loopStartTime: number): void => {
+const scheduleLoop = (
+  context: AudioContext,
+  track: MusicTrack,
+  loopStartTime: number,
+  bus: AudioNode
+): void => {
   const tones = scheduleMusicTones(track)
   const loopSeconds =
     (track.lead.split(' ').length * 60) / track.beatsPerMinute / EIGHTH_NOTES_PER_BEAT
@@ -131,12 +161,13 @@ const scheduleLoop = (context: AudioContext, track: MusicTrack, loopStartTime: n
         durationSeconds: tone.durationSeconds,
         volume: tone.layer === 'lead' ? LEAD_VOLUME : BASS_VOLUME
       },
-      loopStartTime + tone.startSeconds
+      loopStartTime + tone.startSeconds,
+      bus
     )
   )
   const nextLoopStart = loopStartTime + loopSeconds
   audioState.musicTimer = setTimeout(
-    () => scheduleLoop(context, track, nextLoopStart),
+    () => scheduleLoop(context, track, nextLoopStart, bus),
     Math.max(
       0,
       (nextLoopStart - context.currentTime - LOOP_LOOKAHEAD_SECONDS) * MILLISECONDS_PER_SECOND
@@ -147,9 +178,13 @@ const scheduleLoop = (context: AudioContext, track: MusicTrack, loopStartTime: n
 const applyMusic = (): void => {
   stopMusicTimer()
   const track = audioState.musicGame === null ? undefined : GAME_MUSIC[audioState.musicGame]
-  const context = track === undefined || !audioState.musicPlaying ? null : getContext()
+  const wanted = track !== undefined && audioState.musicPlaying && gameAudioSettings.music
+  const context = wanted ? getContext() : null
   if (track === undefined || context === null) return
-  scheduleLoop(context, track, context.currentTime + 0.05)
+  const bus = context.createGain()
+  bus.connect(context.destination)
+  audioState.musicBus = bus
+  scheduleLoop(context, track, context.currentTime + 0.05, bus)
 }
 
 /**
@@ -170,22 +205,12 @@ export const stopGameMusic = (): void => {
 }
 
 /**
- * Whether sound is off.
- * @returns True while muted
+ * Switches music or the effects on or off and remembers the choice. The music starts again from
+ * the top when it comes back on.
+ * @param kind - Which of the two to switch
  */
-export const isGameAudioMuted = (): boolean => gameAudioMuted.value
-
-/**
- * Turns all game sound on or off and remembers the choice.
- * @param muted - True to silence effects and music
- */
-export const setGameAudioMuted = (muted: boolean): void => {
-  gameAudioMuted.value = muted
-  writeStorage(MUTE_STORAGE_KEY, String(muted))
-  if (muted) {
-    stopMusicTimer()
-    audioState.context?.suspend().catch(() => undefined)
-    return
-  }
-  applyMusic()
+export const toggleGameAudioSetting = (kind: keyof SoundSettings): void => {
+  gameAudioSettings[kind] = !gameAudioSettings[kind]
+  writeStorage(SETTINGS_STORAGE_KEY, JSON.stringify(gameAudioSettings))
+  if (kind === 'music') applyMusic()
 }

@@ -1,3 +1,9 @@
+/** What a player can switch off, for every game alike. */
+export type SoundSettings = {
+  music: boolean
+  effects: boolean
+}
+
 export type GameAudioId =
   | 'pictionary'
   | 'wordle'
@@ -7,7 +13,6 @@ export type GameAudioId =
   | 'rhythm'
   | 'marbles'
   | 'marbleBuilder'
-  | 'rockRunner'
   | 'wordRunner'
 
 /** One synthesized effect: a tone swept from one pitch to another, optionally layered. */

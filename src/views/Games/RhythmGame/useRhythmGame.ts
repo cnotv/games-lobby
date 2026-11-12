@@ -34,7 +34,7 @@ import {
 import type { RgScore } from '@/stores/rhythmGame'
 import type { ScheduledNote } from '@webgamekit/audio'
 import { createSound } from '@webgamekit/audio'
-import { gameAudioMuted, playGameSound } from '@/utils/gameAudio'
+import { gameAudioSettings, playGameSound } from '@/utils/gameAudio'
 
 type Particle = { x: number; y: number; r: number; alpha: number; color: string; lane: RgLane }
 type LaneFlash = { alpha: number; result: 'perfect' | 'good' | 'miss' }
@@ -80,7 +80,7 @@ const playHitSounds = (
   deps: GameDeps,
   tempoRate: number
 ): void => {
-  if (gameAudioMuted.value) return
+  if (!gameAudioSettings.effects) return
   createSound(buildHitSound(note, deps.instrument, tempoRate))
   if ((COMBO_THRESHOLDS as readonly number[]).includes(combo)) playGameSound('rhythm', 'combo')
 }
