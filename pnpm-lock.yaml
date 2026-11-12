@@ -84,8 +84,8 @@ importers:
         specifier: ^0.1.0
         version: 0.1.0
       '@webgamekit/multiplayer-p2p':
-        specifier: ^0.1.0
-        version: 0.1.0(trystero@0.23.0)
+        specifier: ^0.1.1
+        version: 0.1.1(trystero@0.23.0)
       '@webgamekit/strudel-flow':
         specifier: workspace:*
         version: link:packages/strudel-flow
@@ -1806,8 +1806,8 @@ packages:
   '@webgamekit/logic@0.1.0':
     resolution: {integrity: sha512-6LlKVNsGijp3FRsFzLjMCYipQQCMmJxrUYOj6gWBp0bdJM0tbceJVhy5TaBu9CzlMeo7g7WgmdjtY/zc/nLnKA==}
 
-  '@webgamekit/multiplayer-p2p@0.1.0':
-    resolution: {integrity: sha512-Ox3q6jZObFg8W+f0hVmQGQWGZmWYZCqkqcoMleZ09epO+VGivqAYA7yNuLzOrAbRzuB5l05rCqCM2Yd1iUG33Q==}
+  '@webgamekit/multiplayer-p2p@0.1.1':
+    resolution: {integrity: sha512-Wr6b3lnpIrxdlqeH90Ucc30fz+nEUGc5CsUMq+CGq1SQb9Sn4inHNAmfM/uYTh1peoHtvVcHdR0OuyJjxqXbwQ==}
     peerDependencies:
       trystero: ^0.23.0
 
@@ -6396,7 +6396,7 @@ snapshots:
 
   '@webgamekit/logic@0.1.0': {}
 
-  '@webgamekit/multiplayer-p2p@0.1.0(trystero@0.23.0)':
+  '@webgamekit/multiplayer-p2p@0.1.1(trystero@0.23.0)':
     dependencies:
       trystero: 0.23.0
 
