@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { encodeWav, joinWavChunks } from './wavEncoding'
+import { encodeWav } from './wavEncoding'
 
 const readText = (view: DataView, offset: number, length: number): string =>
   String.fromCharCode(...Array.from({ length }, (_, index) => view.getUint8(offset + index)))
@@ -38,28 +38,5 @@ describe('encodeWav', () => {
     // Assert
     expect(view.getInt16(44, true)).toBe(expected)
     expect(view.getInt16(46, true)).toBe(0)
-  })
-})
-
-describe('joinWavChunks', () => {
-  it('joins files of the same format into one whose data is theirs, in order', () => {
-    // Arrange
-    const first = encodeWav([Float32Array.of(0.5, 0), Float32Array.of(0, 0.5)], 22050)
-    const second = encodeWav([Float32Array.of(-0.5), Float32Array.of(0.25)], 22050)
-
-    // Act
-    const joined = new DataView(joinWavChunks([first, second]))
-
-    // Assert
-    expect(joined.byteLength).toBe(44 + 3 * 2 * 2)
-    expect(joined.getUint32(40, true)).toBe(12)
-    expect(joined.getUint32(4, true)).toBe(36 + 12)
-    expect(joined.getUint32(24, true)).toBe(22050)
-    expect(joined.getInt16(44, true)).toBe(16384)
-    expect(joined.getInt16(44 + 8, true)).toBe(-16383)
-  })
-
-  it('returns an empty file for no chunks', () => {
-    expect(joinWavChunks([]).byteLength).toBe(44)
   })
 })

@@ -64,8 +64,9 @@ const strudelSong = ref<{
   midi: ArrayBuffer
   tracks: MidiTrackInfo[]
 } | null>(null)
-// The song is not playable until its recording is rendered, so the round cannot start before.
-const isRenderingStrudel = ref(false)
+// The song is not playable until it is rendered, so the round cannot start before. Only the
+// song picked last counts: an earlier pick still rendering is ignored when it finishes.
+const renderingStrudelId = ref<string | null>(null)
 
 const loadLibrary = async (): Promise<void> => {
   library.value = await midiStorageList()
@@ -173,22 +174,25 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
-  isRenderingStrudel.value = true
+  strudelSong.value = null
+  renderingStrudelId.value = strudelId
+  const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
   try {
     // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
     const { renderStrudelCodeToSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
     const { wav, midi } = await renderStrudelCodeToSong(song.code)
+    if (!isStillPicked()) return
     const tracks = listStrudelTracks(midi)
     if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
     strudelSong.value = { wav, midi, tracks }
     selectedTrackIndex.value = tracks[0].index
     emitStrudelSong(props.difficulty)
   } catch {
+    if (!isStillPicked()) return
     selectedStrudelId.value = null
-    strudelSong.value = null
     emit('songPicked', SONGS[0].id)
   } finally {
-    isRenderingStrudel.value = false
+    if (renderingStrudelId.value === strudelId) renderingStrudelId.value = null
   }
 }
 
@@ -198,6 +202,7 @@ const pickSong = async (songValue: string): Promise<void> => {
     return
   }
   selectedStrudelId.value = null
+  renderingStrudelId.value = null
   strudelSong.value = null
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
@@ -252,6 +257,7 @@ const handleFileChange = async (event: Event): Promise<void> => {
   const firstTrack = tracks[0]
   if (!firstTrack) return
   selectedStrudelId.value = null
+  renderingStrudelId.value = null
   strudelSong.value = null
   selectedMidiId.value = id
   selectedTrackIndex.value = firstTrack.index
@@ -282,7 +288,7 @@ const handleDelete = async (): Promise<void> => {
     :config-fields="configFields"
     :controls="CONTROLS_CONFIG"
     :show-results="showResults"
-    :can-start="!isRenderingStrudel"
+    :can-start="renderingStrudelId === null"
     @update:player-name="emit('update:playerName', $event)"
     @update:player-color="emit('update:playerColor', $event)"
     @name-change="emit('nameChange')"
