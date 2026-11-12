@@ -232,7 +232,7 @@ onUnmounted(() => {
     @leave-room="handleLeaveRoom"
   >
     <template #header>
-      <GameHeader :phase="phase" back-to="wizard" @back-to-wizard="handleBackToLobby" />
+      <GameHeader :phase="phase" @back-to-wizard="handleLeaveRoom" />
     </template>
 
     <template #rules>

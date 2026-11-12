@@ -179,7 +179,12 @@ onMounted(() => {
     @leave-room="handleLeaveRoom"
   >
     <template #header>
-      <GameHeader :room-id="roomId" @copy-link="copyLink" />
+      <GameHeader
+        :room-id="roomId"
+        :phase="phase"
+        @copy-link="copyLink"
+        @back-to-wizard="handleLeaveRoom"
+      />
     </template>
 
     <template #rules>
