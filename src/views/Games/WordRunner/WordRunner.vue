@@ -15,6 +15,7 @@ import { useMultiplayerLobbyHandlers } from '@/composables/useMultiplayerLobbyHa
 import { useWordRunnerStore } from '@/stores/wordRunner'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import MultiplayerSidebar, { type MultiplayerPlayer } from '@/components/MultiplayerSidebar.vue'
 import GameTabBar from '@/components/GameTabBar.vue'
 import {
@@ -41,6 +42,7 @@ const FONT_KEY = 'word-runner-font'
 const LOBBY_UI_FONT = 'https://fonts.googleapis.com/css2?family=Darumadrop+One&display=swap'
 
 const store = useWordRunnerStore()
+useGameAudio('wordRunner', () => store.phase, { race: 'start' })
 const { phase, playerList, messages, hostId, levelId, difficulty, raceSerial, started, solo } =
   storeToRefs(store)
 

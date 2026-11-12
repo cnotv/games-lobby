@@ -117,6 +117,9 @@ export type RgSongDef = {
 /** Under 1, so the notes the player plays sit on top of the song. */
 export const BACKING_VOLUME = 0.7
 
+/** Share of full speed each difficulty plays a song at, so a beginner has time to read the notes. */
+export const DIFFICULTY_TEMPO: Record<RgDifficulty, number> = { easy: 0.75, medium: 0.85, hard: 1 }
+
 export const DIFFICULTIES: { id: RgDifficulty; label: string }[] = [
   { id: 'easy', label: 'Easy' },
   { id: 'medium', label: 'Medium' },

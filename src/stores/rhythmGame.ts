@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, shallowRef, computed } from 'vue'
 import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { ScheduledNote } from '@webgamekit/audio'
@@ -44,6 +44,8 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
   const instrument = ref<RgInstrument>('piano')
   const customNotes = ref<RhythmNote[] | null>(null)
   const customSongName = ref('')
+  const customBacking = shallowRef<ArrayBuffer | null>(null)
+  const customTempoRate = ref(1)
   const backgroundNotes = ref<ScheduledNote[] | null>(null)
 
   const playerList = computed(() => Object.values(players.value).sort((a, b) => b.score - a.score))
@@ -98,6 +100,8 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
     instrument,
     customNotes,
     customSongName,
+    customBacking,
+    customTempoRate,
     backgroundNotes,
     playerList,
     hostId,

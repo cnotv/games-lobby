@@ -4,6 +4,7 @@ import type { WmClaimedWord } from '@/stores/squaresMultiplayer'
 import { dictionaryGetDefinition } from '@webgamekit/dictionary'
 import { GRID_SIZE } from './constants'
 import { scoreWord } from './squaresMultiplayerUtilities'
+import { playGameSound } from '@/utils/gameAudio'
 
 type WordSlot = { word: string; claim: WmClaimedWord | null }
 type WordGroup = { length: number; slots: WordSlot[]; foundCount: number }
@@ -131,6 +132,7 @@ const extendSelection = (row: number, col: number): void => {
   const last = selectedPath.value[selectedPath.value.length - 1]
   if (!last || !isAdjacent(last[0], last[1], row, col)) return
   selectedPath.value = [...selectedPath.value, [row, col]]
+  playGameSound('squares', 'select')
 }
 
 let flashTimer: ReturnType<typeof setTimeout> | null = null
@@ -146,9 +148,11 @@ const endSelection = (): void => {
 
     if (isValid && !alreadyClaimed) {
       lastFlash.value = { word, found: true }
+      playGameSound('squares', 'word')
       emit('submitWord', word)
     } else {
       lastFlash.value = { word: isValid ? `${word} already found` : word, found: false }
+      playGameSound('squares', 'invalid')
     }
 
     if (flashTimer) clearTimeout(flashTimer)

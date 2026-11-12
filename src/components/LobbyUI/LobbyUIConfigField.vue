@@ -77,6 +77,8 @@ const showArrows = computed(() => canGoPrevious.value || canGoNext.value)
   display: flex;
   align-items: center;
   gap: var(--spacing-1);
+  max-width: 100%;
+  min-width: 0;
 }
 
 .lui-field__arrows {
@@ -110,6 +112,10 @@ const showArrows = computed(() => canGoPrevious.value || canGoNext.value)
   outline: none;
   appearance: none;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 0 1 auto;
   cursor: pointer;
 }
 

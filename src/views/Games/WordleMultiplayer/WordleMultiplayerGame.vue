@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import type { GuessRow, LetterStatus } from '@/stores/wordleMultiplayer'
 import { KEYBOARD_ROWS } from './constants'
+import { playGameSound } from '@/utils/gameAudio'
 
 const props = defineProps<{
   word: string
@@ -79,15 +80,19 @@ const handleKeyPress = (key: string): void => {
     if (currentGuess.value.length === wordLength.value) {
       emit('submitGuess', currentGuess.value)
       currentGuess.value = ''
+    } else {
+      playGameSound('wordle', 'invalid')
     }
     return
   }
   if (key === '⌫' || key === 'Backspace') {
     currentGuess.value = currentGuess.value.slice(0, -1)
+    playGameSound('wordle', 'delete')
     return
   }
   if (/^[A-Za-z]$/.test(key) && currentGuess.value.length < wordLength.value) {
     currentGuess.value += key.toUpperCase()
+    playGameSound('wordle', 'key')
   }
 }
 
@@ -95,6 +100,14 @@ const onKeydown = (event: KeyboardEvent): void => {
   if (event.ctrlKey || event.altKey || event.metaKey) return
   handleKeyPress(event.key === 'Backspace' ? '⌫' : event.key)
 }
+
+watch(
+  () => props.myGuesses.length,
+  (guessCount, previousCount) => {
+    if (guessCount <= previousCount) return
+    playGameSound('wordle', isSolved.value ? 'solved' : isOutOfAttempts.value ? 'failed' : 'reveal')
+  }
+)
 
 onMounted(() => window.addEventListener('keydown', onKeydown))
 onUnmounted(() => window.removeEventListener('keydown', onKeydown))

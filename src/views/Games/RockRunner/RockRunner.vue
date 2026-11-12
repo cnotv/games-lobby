@@ -25,7 +25,6 @@ import { isMobile } from '@webgamekit/controls'
 import TouchControl from '@/components/TouchControl.vue'
 import { useRockRun } from './game/useRockRun'
 import { useRockRunnerAudio } from './game/useRockRunnerAudio'
-import RockRunnerSoundToggles from './game/RockRunnerSoundToggles.vue'
 import { ROCK_RUNNER_SOUND_SLOTS } from './soundSlots'
 import { useSoundPanelStore } from '@/stores/soundPanel'
 import { useRockRunnerSession } from './useRockRunnerSession'
@@ -384,11 +383,6 @@ onUnmounted(() => {
           <LobbyUIKeyPill class="rr__hud-key" :keyboard="['Esc']" :gamepad="['○']" />
         </LobbyUIButton>
       </div>
-      <RockRunnerSoundToggles
-        class="rr__sound"
-        :settings="audio.settings"
-        @toggle="(kind) => (audio.settings[kind] = !audio.settings[kind])"
-      />
       <TouchControl
         v-if="isMobileDevice && run.currentActions.value"
         class="rr__fauxpad"
@@ -470,13 +464,6 @@ onUnmounted(() => {
   align-items: center;
   white-space: nowrap;
   transform: translateX(-50%);
-}
-
-.rr__sound {
-  position: absolute;
-  top: var(--spacing-4);
-  left: var(--spacing-4);
-  z-index: var(--z-dropdown);
 }
 
 .rr__hud-label {

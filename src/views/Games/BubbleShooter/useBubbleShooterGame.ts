@@ -48,6 +48,7 @@ import {
   stepGamepadAimAngle
 } from './bubbleShooterUtilities'
 import type { GameDeps, BsGameContext } from './types'
+import { playGameSound } from '@/utils/gameAudio'
 
 export type { GameDeps }
 
@@ -86,6 +87,7 @@ const POP_SPEED = 3.5
 const SHAKE_THRESHOLD_MS = 4000
 const SHAKE_AMPLITUDE = 0.08
 const SHAKE_FREQUENCY = 8
+const TREMBLE_SOUND_INTERVAL_MS = 500
 const DROP_ANIM_DURATION = 0.25
 const GAME_OVER_GRAVITY_ACCEL = -22
 const GAME_OVER_GRAVITY_SCATTER_SPEED = 2.5
@@ -574,6 +576,17 @@ const tickGravity = (ctx: BsGameContext, delta: number): void => {
   })
 }
 
+const playTrembleSound = (
+  ctx: BsGameContext,
+  timeToNextDrop: number,
+  inShakeWindow: boolean
+): void => {
+  const slot = inShakeWindow ? Math.floor(timeToNextDrop / TREMBLE_SOUND_INTERVAL_MS) : -1
+  if (slot === ctx.trembleSoundSlot) return
+  ctx.trembleSoundSlot = slot
+  if (inShakeWindow) playGameSound('bubbles', 'tremble')
+}
+
 const tickMeshAnimations = (ctx: BsGameContext, delta: number): void => {
   ctx.frame += delta * SIMULATED_FPS
   animateTimeline(ctx.rollTimeline, ctx.frame, undefined, { enableAutoRemoval: true })
@@ -587,6 +600,7 @@ const tickMeshAnimations = (ctx: BsGameContext, delta: number): void => {
   const timeToNextDrop = rowDropMs - ctx.rowDropAccumulator
   const inShakeWindow =
     !ctx.dropAnimActive && timeToNextDrop <= SHAKE_THRESHOLD_MS && !ctx.isGameOver.value
+  playTrembleSound(ctx, timeToNextDrop, inShakeWindow)
   const shakeIntensity = inShakeWindow ? 1 - timeToNextDrop / SHAKE_THRESHOLD_MS : 0
   const shakeX = inShakeWindow
     ? Math.sin((performance.now() / 1000) * SHAKE_FREQUENCY * Math.PI * 2) *
@@ -730,6 +744,7 @@ const handleCollision = (
   placeBubbleMesh(ctx, snapped.row, snapped.col, color)
 
   const matched = findMatch(snapped.row, snapped.col, ctx.grid)
+  playGameSound('bubbles', matched.length > 0 ? 'pop' : 'stick')
   if (matched.length > 0) {
     const matchPoints = matched.length * MATCH_POINTS_PER_BUBBLE
     matched.forEach(([r, c], i) => {
@@ -739,6 +754,7 @@ const handleCollision = (
       removeBubbleMesh(ctx, r, c)
     })
     const dangling = findDangling(ctx.grid)
+    if (dangling.length > 0) playGameSound('bubbles', 'drop')
     const comboPoints = dangling.length * COMBO_POINTS_PER_BUBBLE
     dangling.forEach(([r, c], i) => {
       const { x: px, y: py } = cellToWorld(r, c)
@@ -800,6 +816,7 @@ const runGameLoop = (ctx: BsGameContext, delta: number): void => {
       ctx.dropAnimActive = true
       ctx.dropAnimElapsed = 0
       ctx.dropAnimOffset = ROW_DROP_COUNT * HEX_ROW_HEIGHT
+      playGameSound('bubbles', 'ceilingDrop')
       rebuildAllMeshes(ctx)
       if (hasReachedFireLine(ctx.grid, FIRE_LINE_Y)) {
         ctx.onGameOverInternal()
@@ -888,6 +905,7 @@ const shoot = (ctx: BsGameContext): void => {
   ctx.inFlightDx = Math.sin(ctx.aimAngle)
   ctx.inFlightDy = Math.cos(ctx.aimAngle)
   ctx.isFlying = true
+  playGameSound('bubbles', 'shoot')
   startWaitingRoll(ctx, ctx.nextColor.value)
   computeTrajectoryPoints(ctx)
 }
@@ -1046,6 +1064,7 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
     dropAnimActive: false,
     dropAnimElapsed: 0,
     dropAnimOffset: 0,
+    trembleSoundSlot: -1,
     scene: null,
     camera: null,
     shooterGroup: null,
@@ -1095,6 +1114,7 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
   }
 
   ctx.onGameOverInternal = (): void => {
+    playGameSound('bubbles', 'lose')
     ctx.isGameOver.value = true
     ctx.isFlying = false
     if (score.value > highScore.value) {

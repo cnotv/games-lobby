@@ -1,5 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { nextTick } from 'vue'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { gameAudioSettings } from '@/utils/gameAudio'
+import { effectScope, nextTick, type EffectScope } from 'vue'
 import { useRockRunnerAudio } from './useRockRunnerAudio'
 import { BUMP_VOLUME, FALL_VOLUME, IMPACT_COOLDOWN_MS, RUN_THEME_VOLUME } from '../config'
 
@@ -44,14 +45,28 @@ const createFakeContext = () => {
 
 const setup = async () => {
   const fake = createFakeContext()
-  const audio = useRockRunnerAudio(() => fake.context)
+  const audio = mountAudio(fake.context)
   audio.startTheme()
   await vi.waitFor(() => expect(fake.raw.decodeAudioData).toHaveBeenCalledTimes(4))
   await new Promise((resolve) => setTimeout(resolve))
   return { ...fake, audio }
 }
 
+// The settings are shared by every game, so a watcher left over from one test would answer in the next.
+const scopes: EffectScope[] = []
+const mountAudio = (context: AudioContext): ReturnType<typeof useRockRunnerAudio> => {
+  const scope = effectScope()
+  scopes.push(scope)
+  const audio = scope.run(() => useRockRunnerAudio(() => context))
+  if (audio === undefined) throw new Error('The scope did not run')
+  return audio
+}
+
+afterEach(() => scopes.splice(0).forEach((scope) => scope.stop()))
+
 beforeEach(() => {
+  gameAudioSettings.music = true
+  gameAudioSettings.effects = true
   play.mockReset().mockResolvedValue(undefined)
   pause.mockReset().mockImplementation(() => undefined)
   vi.stubGlobal(
@@ -85,7 +100,7 @@ describe('useRockRunnerAudio theme', () => {
 
   it('does not start the theme while music is off, and starts it when switched back on', async () => {
     const fake = createFakeContext()
-    const audio = useRockRunnerAudio(() => fake.context)
+    const audio = mountAudio(fake.context)
     audio.settings.music = false
     await nextTick()
 

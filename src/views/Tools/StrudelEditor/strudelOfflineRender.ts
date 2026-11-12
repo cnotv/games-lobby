@@ -5,6 +5,25 @@ type UnknownCallable = (...callArguments: unknown[]) => unknown
 
 const EXPORT_CHANNEL_COUNT = 2
 
+/** A single note that has not been scheduled by now never will be: its sample is stuck loading. */
+const HAP_TIMEOUT_MS = 10_000
+
+/**
+ * Settles with the promise, or fails once the time is up, so one note that never finishes
+ * cannot hold a render, and the audio context it swapped, forever.
+ * @param pending - the work to wait for
+ * @param timeoutMs - how long to wait
+ * @returns what the promise gives
+ * @throws {Error} when the time runs out first
+ */
+export const withTimeout = <Result>(pending: Promise<Result>, timeoutMs: number): Promise<Result> =>
+  Promise.race([
+    pending,
+    new Promise<never>((_resolve, reject) =>
+      setTimeout(() => reject(new Error('A sound took too long to load.')), timeoutMs)
+    )
+  ])
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null
 
@@ -90,12 +109,17 @@ export const renderStrudelPatternToWav = async (
       async (previous, hap) => {
         await previous
         const startSeconds = (hap.beginCycle - exportOptions.startCycle) / cyclesPerSecond
-        await playHap(
-          hap.value,
-          startSeconds,
-          hap.durationCycles / cyclesPerSecond,
-          cyclesPerSecond,
-          startSeconds
+        await withTimeout(
+          Promise.resolve(
+            playHap(
+              hap.value,
+              startSeconds,
+              hap.durationCycles / cyclesPerSecond,
+              cyclesPerSecond,
+              startSeconds
+            )
+          ),
+          HAP_TIMEOUT_MS
         )
       },
       Promise.resolve()

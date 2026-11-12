@@ -19,6 +19,8 @@ const props = defineProps<{
   startAt: number
   customNotes?: RhythmNote[] | null
   backgroundNotes?: ScheduledNote[] | null
+  customBacking?: ArrayBuffer | null
+  customTempoRate?: number
   songName?: string
   opponentName?: string
   opponentScore?: number
@@ -42,6 +44,8 @@ const game = useRhythmGame({
   startAt: props.startAt,
   customNotes: props.customNotes,
   backgroundNotes: props.backgroundNotes,
+  customBacking: props.customBacking,
+  customTempoRate: props.customTempoRate,
   onScoreUpdate: (data) => emit('scoreUpdate', data),
   onSongEnd: () => emit('songEnd')
 })

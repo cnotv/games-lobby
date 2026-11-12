@@ -1,6 +1,5 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { createControls, loadMapping } from '@webgamekit/controls'
-import { createNoteScheduler } from '@webgamekit/audio'
 import {
   LANES,
   NOTE_SPEED_PX_PER_MS,
@@ -11,7 +10,7 @@ import {
   LANE_KEYS,
   CONTROLS_GAME_ID,
   CONTROLS_DEFAULT_MAPPING,
-  BACKING_VOLUME,
+  DIFFICULTY_TEMPO,
   type RgLane,
   type RhythmNote,
   type RgDifficulty,
@@ -19,6 +18,8 @@ import {
   type RgInstrument
 } from './config'
 import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
+import { slowChartNotes, slowScheduledNotes } from './tempo'
+import { createRhythmAudio } from './rhythmAudio'
 import {
   buildScheduledNotes,
   evaluateHit,
@@ -50,6 +51,9 @@ type GameDeps = {
   startAt: number
   customNotes?: RhythmNote[] | null
   backgroundNotes?: ScheduledNote[] | null
+  /** The recording of a song that was rendered rather than shipped. */
+  customBacking?: ArrayBuffer | null
+  customTempoRate?: number
   onScoreUpdate: (data: RgScore) => void
   onSongEnd: () => void
 }
@@ -58,6 +62,25 @@ const resolveNotes = async (deps: GameDeps): Promise<RhythmNote[]> =>
   deps.song === 'custom' && deps.customNotes?.length
     ? deps.customNotes.map((n) => ({ ...n }))
     : fetchSongNotes(deps.song, deps.difficulty)
+
+const buildSongNotes = (
+  chart: RhythmNote[],
+  deps: GameDeps,
+  tempoRate: number
+): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
+  const gameNotes = buildScheduledNotes(chart, deps.instrument)
+  const scheduled = deps.backgroundNotes?.length
+    ? [...gameNotes, ...deps.backgroundNotes]
+    : gameNotes
+  return {
+    chart: slowChartNotes(chart, tempoRate),
+    scheduled: slowScheduledNotes(scheduled, tempoRate)
+  }
+}
+
+// An uploaded song plays as written; the lobby sets the rate of a song it rendered.
+const resolveTempoRate = (deps: GameDeps): number =>
+  deps.song === 'custom' ? (deps.customTempoRate ?? 1) : DIFFICULTY_TEMPO[deps.difficulty]
 
 const buildControlsMapping = (
   laneActive: Ref<boolean[]>,
@@ -308,7 +331,8 @@ export const useRhythmGame = (deps: GameDeps) => {
   const miss = ref(0)
   const laneActive = ref<boolean[]>([false, false, false, false])
 
-  const scheduler = createNoteScheduler()
+  const tempoRate = resolveTempoRate(deps)
+  const { scheduler, startBacking, stopBacking } = createRhythmAudio(tempoRate)
   let rafId = 0
   let notes: RhythmNote[] = []
   let particles: Particle[] = []
@@ -403,9 +427,11 @@ export const useRhythmGame = (deps: GameDeps) => {
 
   // A missing backing track is only a quieter round, so the notes play on without it.
   const startBackingTrack = async (): Promise<void> => {
-    const backing = await fetchSongBacking(deps.song).catch(() => null)
+    // Decoding takes ownership of the bytes, so a rendered recording is handed over as a copy.
+    const backing =
+      deps.customBacking?.slice(0) ?? (await fetchSongBacking(deps.song).catch(() => null))
     if (backing === null || isDestroyed) return
-    await scheduler.startBacking(backing, BACKING_VOLUME).catch(() => undefined)
+    await startBacking(backing)
   }
 
   const init = async (): Promise<void> => {
@@ -415,16 +441,13 @@ export const useRhythmGame = (deps: GameDeps) => {
       deps.onSongEnd()
       return
     }
-    notes = loadedNotes
+    const song = buildSongNotes(loadedNotes, deps, tempoRate)
+    notes = song.chart
     songDurationMs.value = Math.max(
       deps.backgroundNotes?.at(-1)?.time ?? 0,
       notes.at(-1)?.time ?? 0
     )
-    const gameNotes = buildScheduledNotes(notes, deps.instrument)
-    const allNotes = deps.backgroundNotes?.length
-      ? [...gameNotes, ...deps.backgroundNotes]
-      : gameNotes
-    scheduler.start(allNotes, deps.startAt)
+    scheduler.start(song.scheduled, deps.startAt)
     startBackingTrack()
     lastFrameTime = performance.now()
     rafId = requestAnimationFrame(gameLoop)
@@ -432,6 +455,7 @@ export const useRhythmGame = (deps: GameDeps) => {
 
   const destroy = (): void => {
     isDestroyed = true
+    stopBacking()
     cancelAnimationFrame(rafId)
     scheduler.destroy()
     clearCanvas(deps.canvas.value)

@@ -15,6 +15,7 @@ import {
   PLAYER_COLORS
 } from '@/utils/playerProfile'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import WordleMultiplayerLobby from './WordleMultiplayerLobby.vue'
 import WordleMultiplayerGame from './WordleMultiplayerGame.vue'
@@ -26,6 +27,11 @@ import GameTabBar from '@/components/GameTabBar.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useWordleMultiplayerStore()
+useGameAudio('wordle', () => store.phase, {
+  playing: 'start',
+  intermission: 'roundEnd',
+  summary: 'end'
+})
 const {
   phase,
   playerList,

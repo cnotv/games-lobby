@@ -1,4 +1,5 @@
-import { reactive, watch } from 'vue'
+import { watch } from 'vue'
+import { gameAudioSettings } from '@/utils/gameAudio'
 import runTheme from '@/assets/audio/rockrunner/run-theme.mp3'
 import finishSound from '@/assets/audio/rockrunner/finish.wav'
 import fallSound from '@/assets/audio/rockrunner/fall.wav'
@@ -16,7 +17,7 @@ import {
   RUN_THEME_VOLUME,
   SOUND_EFFECT_VOLUME
 } from '../config'
-import type { RockImpact, SoundSettings } from '../types'
+import type { RockImpact } from '../types'
 
 const EFFECT_URLS = {
   finish: finishSound,
@@ -44,7 +45,7 @@ const createDefaultContext = (): AudioContext => new AudioContext()
  * @returns The settings and the controls for the theme, the rumble, impacts and one-shots.
  */
 export const useRockRunnerAudio = (createContext: () => AudioContext = createDefaultContext) => {
-  const settings = reactive<SoundSettings>({ music: true, effects: true })
+  const settings = gameAudioSettings
   const theme = Object.assign(document.createElement('audio'), {
     src: runTheme,
     loop: true,

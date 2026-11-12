@@ -23,12 +23,14 @@ import { TRACKS, MARBLE_OPTIONS, DEFAULT_MARBLE } from './config'
 import MultiplayerSidebar, { type MultiplayerPlayer } from '@/components/MultiplayerSidebar.vue'
 import GameTabBar from '@/components/GameTabBar.vue'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import MarbleMadnessLobby from './MarbleMadnessLobby.vue'
 import MarbleMadnessGame from './MarbleMadnessGame.vue'
 import MarbleMadnessSummary from './MarbleMadnessSummary.vue'
 
 const store = useMarbleMadnessStore()
+useGameAudio('marbles', () => store.phase, { playing: 'start', summary: 'end' })
 const { phase, playerList, messages, winnerId, hostId } = storeToRefs(store)
 
 const storedProfile = loadProfile()

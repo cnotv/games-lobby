@@ -46,6 +46,9 @@ owes them before the pull request is marked ready.
   fails, it is usually right.
 - **No emoji** anywhere — code, comments, UI text, commit messages, documentation, output —
   unless explicitly requested. Use SVG icons or text.
+- **Never play audio through the user's speakers while testing.** Testing Strudel, a sound
+  effect or music means rendering to a file, or running the browser muted, and checking the
+  result by analysing it (length, peak level, spectrum, MIDI notes), never by listening.
 - **Prefer `debugger` over `console.log`.** When a fix has failed twice and the bug persists,
   add logging at the relevant paths to see the real runtime values before trying again.
 

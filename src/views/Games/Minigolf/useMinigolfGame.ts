@@ -41,6 +41,7 @@ import {
   type HoleConfig
 } from './config'
 import type { useMinigolfSession } from './useMinigolfSession'
+import { playGameSound } from '@/utils/gameAudio'
 
 type RigidBody = import('@dimforge/rapier3d-compat').default.RigidBody
 type World = import('@dimforge/rapier3d-compat').default.World
@@ -218,6 +219,7 @@ const checkHoleEntry = (ballState: BallState, ctx: GameContext, deps: GameDeps):
     freezeBall(ballState)
     const hp = activeHoles.value[store.currentHole].holePosition
     ctx.confetti = spawnConfetti(ctx.scene, hp[0], hp[2])
+    playGameSound('minigolf', 'hole')
     resolveTurn(deps, true)
     return
   }
@@ -234,6 +236,7 @@ const runFrame = (ballState: BallState, ctx: GameContext, deps: GameDeps): void 
     ballState.body.setLinvel({ x: vel.x * 0.88, y: vel.y, z: vel.z * 0.88 }, false)
   }
   if (ballState.mesh.position.y > WALL_HEIGHT + 1) {
+    playGameSound('minigolf', 'water')
     resetBall(ballState, activeHoles.value[store.currentHole].teePosition)
     return
   }
@@ -418,6 +421,7 @@ const applyGamepadFire = (
 ): void => {
   if (!result.fire || state.localStrokes.value >= MAX_STROKES) return
   state.localStrokes.value++
+  playGameSound('minigolf', 'putt')
   shootBall(ball, aim.direction, result.power, MAX_SHOT_POWER)
 }
 
@@ -457,6 +461,7 @@ const bindPointerEvents = (
     state.aimPower.value = 0
     if (!endDrag(aim) || state.localStrokes.value >= MAX_STROKES) return
     state.localStrokes.value++
+    playGameSound('minigolf', 'putt')
     shootBall(ball, aim.direction, aim.power, MAX_SHOT_POWER)
   }
   canvas.value!.addEventListener('pointerdown', onPointerDown)

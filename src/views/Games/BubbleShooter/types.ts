@@ -83,6 +83,8 @@ export type BsGameContext = {
   dropAnimActive: boolean
   dropAnimElapsed: number
   dropAnimOffset: number
+  /** Which half second of the countdown the last tremble sound played in, so each plays once. */
+  trembleSoundSlot: number
   scene: THREE.Scene | null
   camera: THREE.PerspectiveCamera | null
   shooterGroup: THREE.Group | null
