@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LobbyUIButton, LobbyUIConfirm, LobbyUIIconButton } from '@/components/LobbyUI'
+import { LobbyUIButton, LobbyUIConfirm } from '@/components/LobbyUI'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
 import '@/assets/styles/lobby-ui.scss'
 
@@ -58,26 +58,9 @@ useMenuNavigation((action) => {
 <template>
   <header class="game-header">
     <div class="game-header__left">
-      <LobbyUIIconButton
-        variant="ghost"
-        :title="backLabel"
-        :aria-label="backLabel"
-        @click="handleBack"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          width="1.2em"
-          height="1.2em"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="3"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M15 5l-7 7 7 7" />
-        </svg>
-      </LobbyUIIconButton>
+      <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
+        &lt;
+      </LobbyUIButton>
     </div>
     <div v-if="!fromLobby && roomId" class="game-header__room">
       <span class="game-header__room-label">Room:</span>
