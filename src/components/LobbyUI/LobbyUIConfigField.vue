@@ -110,6 +110,9 @@ const showArrows = computed(() => canGoPrevious.value || canGoNext.value)
   outline: none;
   appearance: none;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: min(100%, 20rem);
   cursor: pointer;
 }
 

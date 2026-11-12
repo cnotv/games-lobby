@@ -84,7 +84,7 @@ const songField = computed(
       ...SONGS.map((song) => ({ value: song.id, label: `${song.label} (${song.bpm} BPM)` })),
       ...strudelSongs.value.map((song) => ({
         value: `${STRUDEL_SONG_PREFIX}${song.id}`,
-        label: `${song.label} (Strudel)`
+        label: song.label
       })),
       ...library.value.map((entry) => ({ value: entry.id, label: entry.name }))
     ]
