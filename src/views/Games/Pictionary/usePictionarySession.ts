@@ -18,6 +18,7 @@ import {
 import { dictionaryPickRandom, type DictionaryDifficulty } from '@webgamekit/dictionary'
 import type { StrokeEvent, FillEvent } from '@webgamekit/canvas-editor'
 import { usePictionaryStore, type PictionaryPlayer } from '@/stores/pictionary'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const INTERMISSION_MS = 10_000
 const CHOICE_DURATION_MS = 10_000
@@ -385,7 +386,7 @@ const initSessionForContext = (ctx: PictionaryContext, roomId: string): void => 
     })
     return
   }
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)

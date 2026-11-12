@@ -20,6 +20,7 @@ import type {
   UseRockRunnerSessionOptions,
   RrSessionCallbacks
 } from './types'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const AVATAR_CHANNEL = 'rr-avatar'
 const START_CHANNEL = 'rr-start'
@@ -185,7 +186,7 @@ export const useRockRunnerSession = (
 
   const init = (): void => {
     if (!p2pIsSupported()) return
-    const joined = p2pJoin(options.roomId)
+    const joined = p2pJoin(options.roomId, P2P_CONFIG)
     session.value = joined
     localPeerId.value = joined.peerId
     announceSelf(context, joined)

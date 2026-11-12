@@ -59,14 +59,19 @@ const disableZoomPrevention = (
  * Load Google Fonts for this route only
  * @param url The stylesheet URL.
  * @param id The id to give the link, to remove it later.
+ * @returns Resolves once the stylesheet has loaded or failed, not once the font file arrived.
  */
-const loadGoogleFont = (url: string, id: string) => {
-  const link = document.createElement('link')
-  link.href = url
-  link.rel = 'stylesheet'
-  link.id = id
-  document.head.appendChild(link)
-}
+const loadGoogleFont = (url: string, id: string): Promise<void> =>
+  new Promise((resolve) => {
+    const link = document.createElement('link')
+    link.href = url
+    link.rel = 'stylesheet'
+    link.id = id
+    link.onload = () => resolve()
+    // A blocked or offline font must not leave the page waiting: the fallback font shows.
+    link.onerror = () => resolve()
+    document.head.appendChild(link)
+  })
 
 /**
  * Remove Google Font from the document

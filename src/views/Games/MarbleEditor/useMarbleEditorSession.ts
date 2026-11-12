@@ -22,6 +22,7 @@ import type {
   UseMarbleEditorSessionOptions,
   MeSessionCallbacks
 } from './types'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const AVATAR_CHANNEL = 'me-avatar'
 const MAP_CHANNEL = 'me-map'
@@ -221,7 +222,7 @@ export const useMarbleEditorSession = (
 
   const init = (): void => {
     if (!p2pIsSupported()) return
-    const joined = p2pJoin(options.roomId)
+    const joined = p2pJoin(options.roomId, P2P_CONFIG)
     session.value = joined
     localPeerId.value = joined.peerId
     announceSelf(context, joined)

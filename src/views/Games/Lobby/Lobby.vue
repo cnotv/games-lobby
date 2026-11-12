@@ -2,7 +2,12 @@
 import { ref, computed, onMounted, onUnmounted, watch, provide, nextTick } from 'vue'
 import { storeToRefs } from 'pinia'
 import { useRoute, useRouter } from 'vue-router'
-import { LobbyUINameInput, LobbyUIColorSwatches } from '@/components/LobbyUI'
+import {
+  LobbyUINameInput,
+  LobbyUIColorSwatches,
+  LobbyUIButton,
+  LobbyUIKeyPill
+} from '@/components/LobbyUI'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
 import { Chat } from '@/components/Chat'
 import '@/assets/styles/game-ui.scss'
@@ -26,13 +31,33 @@ import { useRhythmGameStore } from '@/stores/rhythmGame'
 import { useMarbleMadnessStore } from '@/stores/marbleMadness'
 import { useMarbleEditorStore } from '@/stores/marbleEditor'
 import { useRockRunnerStore } from '@/stores/rockRunner'
+import { useWordRunnerStore } from '@/stores/wordRunner'
 import LobbyPresence from './LobbyPresence.vue'
 import LobbyRoomList from './LobbyRoomList.vue'
 import { useLobbyStore } from '@/stores/lobby'
 import type { GameType, LobbyRoom } from '@/types/lobby'
-import { GAME_LABELS, GAME_TYPES, GAME_COMPONENTS } from './constants'
+import { GAME_LABELS, GAME_TYPES, GAME_COMPONENTS, EXPERIMENTAL_GAMES } from './constants'
 
 const FONT_KEY = 'lobby-font'
+const FONT_URL = 'https://fonts.googleapis.com/css2?family=Darumadrop+One&display=swap'
+const FONT_FACE = '1em "Darumadrop One"'
+const FONT_TIMEOUT_MS = 3000
+
+const fontReady = ref(false)
+
+const loadFontFace = async (): Promise<void> => {
+  await loadGoogleFont(FONT_URL, FONT_KEY)
+  await document.fonts.load(FONT_FACE).catch(() => [])
+}
+
+// The timeout covers the stylesheet request too: a stalled font host must not keep the page blank.
+const loadLobbyFont = async (): Promise<void> => {
+  await Promise.race([
+    loadFontFace(),
+    new Promise((resolve) => setTimeout(resolve, FONT_TIMEOUT_MS))
+  ])
+  fontReady.value = true
+}
 
 const route = useRoute()
 const router = useRouter()
@@ -47,7 +72,8 @@ const gameStores: Record<GameType, { playerList: { id: string; name: string; col
     RhythmGame: useRhythmGameStore(),
     MarbleMadness: useMarbleMadnessStore(),
     MarbleEditor: useMarbleEditorStore(),
-    RockRunner: useRockRunnerStore()
+    RockRunner: useRockRunnerStore(),
+    WordRunner: useWordRunnerStore()
   }
 
 const stored = loadProfile()
@@ -73,6 +99,11 @@ provide('setRoomHidden', (hidden: boolean) => {
     toggleRoomVisibility()
   }
 })
+const showExperimental = computed(() => route.query.experimental !== undefined)
+const pickableGames = computed(() =>
+  GAME_TYPES.filter((game) => showExperimental.value || !EXPERIMENTAL_GAMES.includes(game))
+)
+const screenshotUrl = (game: GameType): string => `${import.meta.env.BASE_URL}og/games/${game}.jpg`
 const activeGame = computed(() => route.query.game as GameType | undefined)
 const activeComponent = computed(() =>
   activeGame.value ? GAME_COMPONENTS[activeGame.value] : null
@@ -106,12 +137,23 @@ watch(activeGame, (game, previous) => {
 onMounted(() => {
   saveProfile(playerName.value, playerColor.value)
   init()
-  loadGoogleFont('https://fonts.googleapis.com/css2?family=Darumadrop+One&display=swap', FONT_KEY)
+  loadLobbyFont()
 })
 
 onUnmounted(() => {
   removeGoogleFont(FONT_KEY)
 })
+
+const openSettings = async (): Promise<void> => {
+  profileOpen.value = true
+  await nextTick()
+  const nameInput = lobbyRoot.value?.querySelector<HTMLInputElement>('.lobby__profile input')
+  const row = nameInput?.closest<HTMLElement>('[data-nav-row]')
+  if (!nameInput || !row) return
+  focusRow.value = queryRows().indexOf(row)
+  focusCol.value = 0
+  nameInput.focus()
+}
 
 const handleNameCommit = (): void => {
   saveProfile(playerName.value, playerColor.value)
@@ -189,7 +231,43 @@ const isTextInput = (element: Element | null): boolean =>
   element instanceof HTMLInputElement &&
   new Set(['text', 'number', 'email', 'password']).has(element.type)
 
+const CARD_SELECTOR = '.lobby__game-card'
+
+const queryCards = (): HTMLElement[] =>
+  lobbyRoot.value ? [...lobbyRoot.value.querySelectorAll<HTMLElement>(CARD_SELECTOR)] : []
+
+const centerOf = (element: HTMLElement): { x: number; y: number } => {
+  const box = element.getBoundingClientRect()
+  return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+}
+
+// Cards wrap onto several visual rows inside one nav row, so vertical moves follow the layout:
+// the nearest card in the chosen direction, preferring the one most directly above or below.
+const findCardVertically = (current: HTMLElement, direction: 1 | -1): HTMLElement | undefined => {
+  const from = centerOf(current)
+  const rowGap = current.getBoundingClientRect().height / 2
+  return queryCards()
+    .map((card) => ({ card, center: centerOf(card) }))
+    .filter(({ center }) => (center.y - from.y) * direction > rowGap)
+    .sort(
+      (first, second) =>
+        Math.abs(first.center.y - from.y) - Math.abs(second.center.y - from.y) ||
+        Math.abs(first.center.x - from.x) - Math.abs(second.center.x - from.x)
+    )[0]?.card
+}
+
+const moveBetweenCards = (direction: 1 | -1): boolean => {
+  const active = document.activeElement
+  if (!(active instanceof HTMLElement) || !active.matches(CARD_SELECTOR)) return false
+  const target = findCardVertically(active, direction)
+  if (!target) return false
+  focusCol.value = queryCards().indexOf(target)
+  target.focus()
+  return true
+}
+
 const handleNavUp = (rows: HTMLElement[]): void => {
+  if (moveBetweenCards(-1)) return
   focusRow.value = Math.max(0, focusRow.value - 1)
   focusCol.value = 0
   applyFocus()
@@ -197,6 +275,7 @@ const handleNavUp = (rows: HTMLElement[]): void => {
 }
 
 const handleNavDown = (rows: HTMLElement[]): void => {
+  if (moveBetweenCards(1)) return
   focusRow.value = Math.min(rows.length - 1, focusRow.value + 1)
   focusCol.value = 0
   applyFocus()
@@ -243,7 +322,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div ref="lobbyRoot" class="lobby" :class="{ 'lobby--in-game': !!activeComponent }">
+  <div
+    ref="lobbyRoot"
+    class="lobby"
+    :class="{ 'lobby--in-game': !!activeComponent, 'lobby--ready': fontReady }"
+  >
     <!-- Main content area -->
     <main class="lobby__main">
       <div v-if="activeComponent" class="lobby__game-embed">
@@ -254,14 +337,28 @@ onMounted(async () => {
         <p class="lobby__picker-label">Pick a game to create a room</p>
         <div class="lobby__picker-games" data-nav-row>
           <button
-            v-for="game in GAME_TYPES"
+            v-for="game in pickableGames"
             :key="game"
             class="lobby__game-card"
             type="button"
             @click="pickGame(game)"
           >
+            <img
+              class="lobby__game-shot"
+              :src="screenshotUrl(game)"
+              :alt="`${GAME_LABELS[game]} screenshot`"
+              loading="lazy"
+              width="1200"
+              height="630"
+            />
             <span class="lobby__game-name">{{ GAME_LABELS[game] }}</span>
           </button>
+        </div>
+        <div data-nav-row>
+          <LobbyUIButton variant="ghost" size="sm" @click="openSettings">
+            Settings
+            <LobbyUIKeyPill :keyboard="['Enter']" :gamepad="['A']" />
+          </LobbyUIButton>
         </div>
       </div>
     </main>
@@ -372,6 +469,14 @@ onMounted(async () => {
   overflow: hidden;
   background: var(--lb-bg);
   font-family: var(--lui-font);
+
+  /* Not 0: a fully transparent page paints nothing, and Lighthouse then reports no first contentful paint. */
+  opacity: 0.01;
+  transition: opacity 0.4s ease;
+}
+
+.lobby--ready {
+  opacity: 1;
 }
 
 .lobby--in-game {
@@ -411,24 +516,24 @@ onMounted(async () => {
 }
 
 .lobby__picker-games {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
   gap: var(--spacing-4);
-  flex-wrap: wrap;
-  justify-content: center;
+  width: min(100%, 60rem);
 }
 
 .lobby__game-card {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   gap: var(--spacing-2);
-  padding: var(--spacing-5, 1.5rem) var(--spacing-6, 2rem);
+  padding: var(--spacing-4);
   border: 3px solid transparent;
   border-radius: 1.25rem;
   background: transparent;
   cursor: pointer;
   transition: transform 0.1s ease;
-  min-width: 9rem;
   touch-action: manipulation;
 }
 
@@ -445,6 +550,14 @@ onMounted(async () => {
 .lobby__game-card:focus .lobby__game-name,
 .lobby__game-card:focus-visible .lobby__game-name {
   color: var(--lui-focus-color);
+}
+
+.lobby__game-shot {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1200 / 630;
+  object-fit: cover;
+  border-radius: 0.75rem;
 }
 
 .lobby__game-name {
@@ -566,16 +679,12 @@ onMounted(async () => {
 
   .lobby__picker-games {
     gap: var(--spacing-3);
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    width: 100%;
-    justify-content: flex-start;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    overflow-y: auto;
   }
 
   .lobby__game-card {
-    padding: var(--spacing-3) var(--spacing-4);
-    min-width: 7rem;
-    flex: 0 0 auto;
+    padding: var(--spacing-3);
   }
 }
 </style>

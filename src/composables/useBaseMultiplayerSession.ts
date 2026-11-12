@@ -10,6 +10,7 @@ import {
   p2pIsSupported,
   type P2PSession
 } from '@webgamekit/multiplayer-p2p'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const REANNOUNCE_DELAY_MS = 2000
 
@@ -99,7 +100,7 @@ export const useBaseMultiplayerSession = <
   const isHost = computed(() => !!localPeerId.value && options.getHostId() === localPeerId.value)
 
   const _connect = async (roomId: string): Promise<void> => {
-    const s = await p2pJoin(roomId, options.matchmakerRoom)
+    const s = await p2pJoin(roomId, P2P_CONFIG)
     session.value = s
     localPeerId.value = s.peerId
     announceSelf(s, options)

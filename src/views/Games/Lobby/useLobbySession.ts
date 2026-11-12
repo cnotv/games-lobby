@@ -13,6 +13,7 @@ import { chatMessageCreate, type ChatMessage } from '@webgamekit/chat'
 import { useLobbyStore } from '@/stores/lobby'
 import type { LobbyPlayer, LobbyRoom } from '@/types/lobby'
 import { LOBBY_CHANNEL, REANNOUNCE_MS } from './constants'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const HELLO_CHANNEL = 'lb-hello'
 const CHAT_CHANNEL = 'lb-chat'
@@ -55,7 +56,7 @@ export const useLobbySession = (initialName: string, initialColor: string) => {
 
   const init = (): void => {
     if (!p2pIsSupported()) return
-    const joined = p2pJoin(LOBBY_CHANNEL)
+    const joined = p2pJoin(LOBBY_CHANNEL, P2P_CONFIG)
     session.value = joined
     localPeerId.value = joined.peerId
 

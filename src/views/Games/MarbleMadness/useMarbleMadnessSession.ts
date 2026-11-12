@@ -22,6 +22,7 @@ import type {
   UseMarbleMadnessSessionOptions,
   MmContext
 } from './types'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const HELLO_CHANNEL = 'mm-hello'
 const AVATAR_CHANNEL = 'mm-avatar'
@@ -183,7 +184,7 @@ const bindGameEvents = (ctx: MmContext, joined: P2PSession): void => {
 
 const initSessionForContext = (ctx: MmContext, roomId: string): void => {
   if (!p2pIsSupported()) return
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)

@@ -36,6 +36,7 @@ import {
   scoreWord,
   shuffleArray
 } from './squaresMultiplayerUtilities'
+import { P2P_CONFIG } from '@/config/p2p'
 
 const ROUND_CHANNEL = 'sm-round'
 const WORD_CLAIM_CHANNEL = 'sm-claim'
@@ -243,7 +244,7 @@ const initSessionForContext = (ctx: WmContext, roomId: string): void => {
     })
     return
   }
-  const joined = p2pJoin(roomId)
+  const joined = p2pJoin(roomId, P2P_CONFIG)
   ctx.session.value = joined
   ctx.localPeerId.value = joined.peerId
   announceSelf(ctx, joined)
