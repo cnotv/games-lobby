@@ -8,12 +8,6 @@ import '@/assets/styles/lobby-ui.scss'
 const props = defineProps<{
   roomId?: string
   phase?: string
-  /**
-   * Where the back button goes from inside a running game. 'picker' leaves for
-   * the games list; 'wizard' stays put and asks the game to return to its own
-   * lobby, which is the screen a player who has just finished a run wants next.
-   */
-  backTo?: 'picker' | 'wizard'
 }>()
 
 const emit = defineEmits<{
@@ -25,14 +19,17 @@ const route = useRoute()
 const router = useRouter()
 const fromLobby = computed(() => !!route.query.game)
 const confirmOpen = ref(false)
+const backLabel = computed(() =>
+  props.phase && props.phase !== 'lobby' ? 'Back to the game start' : 'Back to the lobby'
+)
 
 // Embedded in the Lobby view: clearing the query returns to it. Standalone
 // route: navigate to the Lobby view, so every game always has a way back.
 const navigateBack = (): void => {
   confirmOpen.value = false
-  // Asked to stay in the game: the view drops back to its own wizard rather
-  // than the route changing at all, so nothing is torn down and rebuilt.
-  if (props.backTo === 'wizard' && props.phase && props.phase !== 'lobby') {
+  // Inside a game the button steps back to the game's own start screen; only
+  // from that screen does it leave for the lobby.
+  if (props.phase && props.phase !== 'lobby') {
     emit('backToWizard')
     return
   }
@@ -61,8 +58,8 @@ useMenuNavigation((action) => {
 <template>
   <header class="game-header">
     <div class="game-header__left">
-      <LobbyUIButton variant="ghost" title="Return to the lobby" @click="handleBack">
-        ← Lobby
+      <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
+        &lt;
       </LobbyUIButton>
     </div>
     <div v-if="!fromLobby && roomId" class="game-header__room">

@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { saveProfile } from '@/utils/playerProfile'
 
 type SessionInterface = {
@@ -23,6 +23,7 @@ export const useMultiplayerLobbyHandlers = (
   roomId: Ref<string>,
   session: SessionInterface
 ) => {
+  const route = useRoute()
   const router = useRouter()
 
   const handleNameChange = (): void => {
@@ -40,14 +41,14 @@ export const useMultiplayerLobbyHandlers = (
 
   const handleMatchFound = (gameRoomId: string): void => {
     roomId.value = gameRoomId
-    router.replace({ query: { room: gameRoomId } })
+    router.replace({ query: { ...route.query, room: gameRoomId } })
     session.reconnect(gameRoomId)
   }
 
   const handleLeaveRoom = (): void => {
     const freshId = crypto.randomUUID()
     roomId.value = freshId
-    router.replace({ query: { room: freshId } })
+    router.replace({ query: { ...route.query, room: freshId } })
     session.reconnect(freshId)
   }
 

@@ -126,14 +126,14 @@ const copyLink = async (): Promise<void> => {
 
 const handleMatchFound = (gameRoomId: string): void => {
   roomId.value = gameRoomId
-  router.replace({ query: { room: gameRoomId } })
+  router.replace({ query: { ...route.query, room: gameRoomId } })
   session.reconnect(gameRoomId)
 }
 
 const handleLeaveRoom = (): void => {
   const freshId = crypto.randomUUID()
   roomId.value = freshId
-  router.replace({ query: { room: freshId } })
+  router.replace({ query: { ...route.query, room: freshId } })
   session.reconnect(freshId)
 }
 
@@ -179,7 +179,12 @@ onMounted(() => {
     @leave-room="handleLeaveRoom"
   >
     <template #header>
-      <GameHeader :room-id="roomId" @copy-link="copyLink" />
+      <GameHeader
+        :room-id="roomId"
+        :phase="phase"
+        @copy-link="copyLink"
+        @back-to-wizard="handleLeaveRoom"
+      />
     </template>
 
     <template #rules>
