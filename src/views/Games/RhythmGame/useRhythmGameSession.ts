@@ -22,6 +22,8 @@ type ConfigPayload = {
   customSongName?: string
   /** A rendered song's chart is shared at its own tempo; this is the rate every player slows it to. */
   customTempoRate?: number
+  /** The song itself, for a Strudel song every player plays live. */
+  customStrudelCode?: string | null
 }
 type StartPayload = {
   song: RgSong
@@ -29,6 +31,7 @@ type StartPayload = {
   startAt: number
   customNotes?: RhythmNote[] | null
   customTempoRate?: number
+  customStrudelCode?: string | null
 }
 type ScorePayload = RgScore
 
@@ -74,6 +77,7 @@ export const applyConfigPayload = (store: RhythmGameStore, data: ConfigPayload):
   store.customNotes = data.customNotes ?? null
   store.customSongName = data.customSongName ?? ''
   store.customTempoRate = data.customTempoRate ?? 1
+  store.customStrudelCode = data.customStrudelCode ?? null
 }
 
 /**
@@ -84,6 +88,7 @@ export const applyConfigPayload = (store: RhythmGameStore, data: ConfigPayload):
 export const applyStartPayload = (store: RhythmGameStore, data: StartPayload): void => {
   if (data.customNotes) store.customNotes = data.customNotes
   store.customTempoRate = data.customTempoRate ?? 1
+  store.customStrudelCode = data.customStrudelCode ?? null
 }
 
 const bindGameData = (
@@ -145,7 +150,8 @@ export const useRhythmGameSession = (options: SessionOptions) => {
           instrument: store.instrument,
           customNotes: store.customNotes,
           customSongName: store.customSongName,
-          customTempoRate: store.customTempoRate
+          customTempoRate: store.customTempoRate,
+          customStrudelCode: store.customStrudelCode
         }
         p2pSendData(s, CONFIG_CHANNEL, config)
       }
@@ -167,7 +173,8 @@ export const useRhythmGameSession = (options: SessionOptions) => {
       difficulty: store.difficulty,
       startAt,
       customNotes: store.customNotes,
-      customTempoRate: store.customTempoRate
+      customTempoRate: store.customTempoRate,
+      customStrudelCode: store.customStrudelCode
     }
     p2pSendData(session.value, START_CHANNEL, payload)
     store.phase = 'playing'

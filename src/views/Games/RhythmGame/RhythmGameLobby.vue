@@ -14,7 +14,7 @@ import {
   type MidiLibraryEntry
 } from './midiStorage'
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
-import { buildStrudelBackground, buildStrudelChart, listStrudelTracks } from './strudelSong'
+import { buildLiveSongCode, buildStrudelChart, listStrudelTracks } from './strudelSong'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgSong, RhythmNote } from './config'
@@ -45,7 +45,7 @@ const emit = defineEmits<{
     gameNotes: RhythmNote[],
     backgroundNotes: ScheduledNote[],
     songName: string,
-    backing?: ArrayBuffer | null,
+    strudelCode?: string | null,
     tempoRate?: number
   ]
   songPicked: [song: RgSong]
@@ -60,7 +60,8 @@ const STRUDEL_SONG_PREFIX = 'strudel:'
 const strudelSongs = ref<StrudelExample[]>([])
 const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{
-  wav: ArrayBuffer | null
+  code: string
+  cyclesPerSecond: number
   midi: ArrayBuffer
   tracks: MidiTrackInfo[]
 } | null>(null)
@@ -155,17 +156,15 @@ const resolveTrackLabel = (midiId: string, trackIndex: number): string => {
 const emitStrudelSong = (difficulty: RgDifficulty): void => {
   const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
   if (song === undefined || strudelSong.value === null) return
-  const chart = buildStrudelChart(strudelSong.value.midi, selectedTrackIndex.value, difficulty)
-  // Without a recording the song's own notes play behind the chart instead.
-  const background =
-    strudelSong.value.wav === null ? buildStrudelBackground(strudelSong.value.midi) : []
+  const { code, cyclesPerSecond, midi } = strudelSong.value
+  const tempoRate = DIFFICULTY_TEMPO[difficulty]
   emit(
     'midiParsed',
-    chart,
-    background,
+    buildStrudelChart(midi, selectedTrackIndex.value, difficulty),
+    [],
     song.label,
-    strudelSong.value.wav,
-    DIFFICULTY_TEMPO[difficulty]
+    buildLiveSongCode(code, cyclesPerSecond, tempoRate),
+    tempoRate
   )
 }
 
@@ -179,12 +178,12 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
   try {
     // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
-    const { renderStrudelCodeToSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
-    const { wav, midi } = await renderStrudelCodeToSong(song.code)
+    const { renderStrudelCodeToNotes } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
+    const { midi, cyclesPerSecond } = await renderStrudelCodeToNotes(song.code)
     if (!isStillPicked()) return
     const tracks = listStrudelTracks(midi)
     if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
-    strudelSong.value = { wav, midi, tracks }
+    strudelSong.value = { code: song.code, cyclesPerSecond, midi, tracks }
     selectedTrackIndex.value = tracks[0].index
     emitStrudelSong(props.difficulty)
   } catch {

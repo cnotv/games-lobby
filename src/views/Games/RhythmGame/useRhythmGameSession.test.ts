@@ -21,7 +21,8 @@ describe('the song a host shares', () => {
       instrument: 'piano' as const,
       startAt: 0,
       customNotes: chart,
-      customTempoRate: 0.75
+      customTempoRate: 0.75,
+      customStrudelCode: 's("bd")\nsetcps(0.375)'
     }
 
     // Act
@@ -30,14 +31,17 @@ describe('the song a host shares', () => {
     // Assert
     expect(store.customNotes).toEqual(chart)
     expect(store.customTempoRate).toBe(0.75)
+    expect(store.customStrudelCode).toBe('s("bd")\nsetcps(0.375)')
   })
 
   it('plays a song shared without a tempo at full speed', () => {
     const store = useRhythmGameStore()
     store.customTempoRate = 0.75
+    store.customStrudelCode = 's("bd")'
 
     applyConfigPayload(store, { song: 'electric-pulse', difficulty: 'hard', instrument: 'bass' })
 
     expect(store.customTempoRate).toBe(1)
+    expect(store.customStrudelCode).toBeNull()
   })
 })
