@@ -52,6 +52,19 @@ describe('game audio config', () => {
     })
   })
 
+  it('loops for at least 50 seconds, so a tune is not heard over and over', () => {
+    const MIN_LOOP_SECONDS = 50
+    tracks.forEach(([game, track]) => {
+      const loopSeconds = (track.lead.split(' ').length * 30) / track.beatsPerMinute
+      expect(loopSeconds, game).toBeGreaterThanOrEqual(MIN_LOOP_SECONDS)
+    })
+  })
+
+  it('gives Bubble Shooter a sound for the ceiling trembling and for it dropping', () => {
+    expect(GAME_SFX.bubbles?.tremble).toBeDefined()
+    expect(GAME_SFX.bubbles?.ceilingDrop).toBeDefined()
+  })
+
   it('only uses note names the parser understands', () => {
     tracks.forEach(([game, track]) => {
       const tokens = [...track.lead.split(' '), ...track.bass.split(' ')].filter(

@@ -678,6 +678,39 @@ export const GAME_SFX: Partial<Record<GameAudioId, Record<string, SfxDefinition>
         delaySeconds: 0.04
       }
     ],
+    tremble: [
+      {
+        waveType: 'sawtooth',
+        startFrequency: 70,
+        endFrequency: 55,
+        durationSeconds: 0.45,
+        volume: 0.1
+      },
+      {
+        waveType: 'square',
+        startFrequency: 140,
+        endFrequency: 110,
+        durationSeconds: 0.3,
+        volume: 0.04
+      }
+    ],
+    ceilingDrop: [
+      {
+        waveType: 'sawtooth',
+        startFrequency: 220,
+        endFrequency: 45,
+        durationSeconds: 0.5,
+        volume: 0.2
+      },
+      {
+        waveType: 'triangle',
+        startFrequency: 90,
+        endFrequency: 40,
+        durationSeconds: 0.35,
+        volume: 0.22,
+        delaySeconds: 0.12
+      }
+    ],
     drop: [
       {
         waveType: 'triangle',
@@ -1128,56 +1161,56 @@ export const GAME_MUSIC: Partial<Record<GameAudioId, MusicTrack>> = {
     beatsPerMinute: 112,
     leadWave: 'triangle',
     bassWave: 'triangle',
-    lead: 'e5 - g5 e5 c5 - e5 - e5 - a5 e5 c5 - a4 - f5 - a5 f5 c5 - f5 - d5 - g5 d5 b4 - d5 g5',
-    bass: 'c3 - g3 - c3 - g3 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 -'
+    lead: 'e5 - g5 e5 c5 - e5 - e5 - a5 e5 c5 - a4 - f5 - a5 f5 c5 - f5 - d5 - g5 d5 b4 - d5 g5 g4 - c5 g4 e4 - g4 - e5 - a5 e5 c5 - e5 - c5 - f5 c5 a4 - c5 - d5 - g5 d5 b4 - d5 - c5 c5 f5 - c5 a4 f4 - d5 d5 g5 - d5 b4 g4 - b4 b4 e5 - b4 g4 e4 - e5 e5 a5 - e5 c5 a4 - f4 a4 c5 a4 c5 f5 c5 a4 g4 b4 d5 b4 d5 g5 d5 b4 e4 g4 b4 g4 b4 e5 b4 g4 a4 c5 e5 c5 e5 a5 e5 c5 e5 - g5 e5 c5 - e5 - e5 - a5 e5 c5 - a4 - f5 - a5 f5 c5 - f5 - d5 - g5 d5 b4 - d5 g5 d5 - - a4 - - f4 - a5 - - e5 - - c5 - f5 - - c5 - - a4 - g5 - - d5 - - b4 - c5 c5 f5 - c5 a4 f4 - d5 d5 g5 - d5 b4 g4 - b4 b4 e5 - b4 g4 e4 - e5 e5 a5 - e5 c5 a4 - g4 - c5 g4 e4 - g4 - e5 - a5 e5 c5 - e5 - c5 - f5 c5 a4 - c5 - d5 - g5 d5 b4 - d5 -',
+    bass: 'c3 - g3 - c3 - g3 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - c3 - g2 - c3 - g2 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - e2 - b2 - e2 - b2 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - e2 - b2 - e2 - b2 - a2 - e3 - a2 - e3 - c3 - g3 - c3 - g3 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - d3 - - - a2 - - - a2 - - - e3 - - - f2 - - - c3 - - - g2 - - - d3 - - - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 - e2 - b2 - e2 - b2 - a2 - e3 - a2 - e3 - c3 - g2 - c3 - g2 - a2 - e3 - a2 - e3 - f2 - c3 - f2 - c3 - g2 - d3 - g2 - d3 -'
   },
   wordle: {
     beatsPerMinute: 90,
     leadWave: 'sine',
     bassWave: 'triangle',
-    lead: 'e5 - - c5 - a4 - - c5 - - a4 - f4 - - g4 - - e5 - c5 - - d5 - - b4 - g4 - -',
-    bass: 'a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g3 - - - g2 - - - d3 - - -'
+    lead: 'e5 - - c5 - a4 - - c5 - - a4 - f4 - - g4 - - e5 - c5 - - d5 - - b4 - g4 - - e5 - a5 e5 c5 - e5 - c5 - f5 c5 a4 - c5 - g4 - c5 g4 e4 - g4 - d5 - g5 d5 b4 - d5 - a4 a4 d5 - a4 f4 d4 - e5 e5 a5 - e5 c5 a4 - c5 c5 f5 - c5 a4 f4 - b4 b4 e5 - b4 g#4 e4 - d4 f4 a4 f4 a4 d5 a4 f4 a4 c5 e5 c5 e5 a5 e5 c5 f4 a4 c5 a4 c5 f5 c5 a4 e4 g#4 b4 g#4 b4 e5 b4 g#4 e5 - - c5 - a4 - - c5 - - a4 - f4 - - g4 - - e5 - c5 - - d5 - - b4 - g4 - - f5 - - c5 - - a4 - c5 - - g4 - - e4 - g5 - - d5 - - b4 - a5 - - e5 - - c5 - a4 a4 d5 - a4 f4 d4 - e5 e5 a5 - e5 c5 a4 - c5 c5 f5 - c5 a4 f4 - b4 b4 e5 - b4 g#4 e4 - e5 - a5 e5 c5 - e5 - c5 - f5 c5 a4 - c5 - g4 - c5 g4 e4 - g4 - d5 - g5 d5 b4 - d5 -',
+    bass: 'a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g3 - - - g2 - - - d3 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - - d3 - - - a2 - - - a2 - - - e3 - - - f2 - - - c3 - - - e2 - - - b2 - - - d3 - - - a2 - - - a2 - - - e3 - - - f2 - - - c3 - - - e2 - - - b2 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g3 - - - g2 - - - d3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - - a2 - - - e3 - - - d3 - - - a2 - - - a2 - - - e3 - - - f2 - - - c3 - - - e2 - - - b2 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - -'
   },
   squares: {
     beatsPerMinute: 120,
     leadWave: 'square',
     bassWave: 'triangle',
-    lead: 'b4 d5 g5 d5 b4 d5 g5 - e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - d5 f#5 a5 f#5 d5 f#5 a5 -',
-    bass: 'g2 - g3 - g2 - g3 - e2 - e3 - e2 - e3 - c3 - c2 - c3 - c2 - d3 - d2 - d3 - d2 -'
+    lead: 'b4 d5 g5 d5 b4 d5 g5 - e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - d5 f#5 a5 f#5 d5 f#5 a5 - d5 - g5 d5 b4 - d5 - b4 - e5 b4 g4 - b4 - g4 - c5 g4 e4 - g4 - a4 - d5 a4 f#4 - a4 - g4 g4 c5 - g4 e4 c4 - a4 a4 d5 - a4 f#4 d4 - f#5 f#5 b5 - f#5 d5 b4 - b4 b4 e5 - b4 g4 e4 - c4 e4 g4 e4 g4 c5 g4 e4 d4 f#4 a4 f#4 a4 d5 a4 f#4 b4 d5 f#5 d5 f#5 b5 f#5 d5 e4 g4 b4 g4 b4 e5 b4 g4 b4 d5 g5 d5 b4 d5 g5 - e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - d5 f#5 a5 f#5 d5 f#5 a5 - e5 - - b4 - - g4 - c5 - - g4 - - e4 - d5 - - a4 - - f#4 - g5 - - d5 - - b4 - g4 g4 c5 - g4 e4 c4 - a4 a4 d5 - a4 f#4 d4 - f#5 f#5 b5 - f#5 d5 b4 - b4 b4 e5 - b4 g4 e4 - d5 - g5 d5 b4 - d5 - b4 - e5 b4 g4 - b4 - g4 - c5 g4 e4 - g4 - a4 - d5 a4 f#4 - a4 -',
+    bass: 'g2 - g3 - g2 - g3 - e2 - e3 - e2 - e3 - c3 - c2 - c3 - c2 - d3 - d2 - d3 - d2 - g2 - d3 - g2 - d3 - e2 - b2 - e2 - b2 - c3 - g2 - c3 - g2 - d3 - a2 - d3 - a2 - c3 - g2 - c3 - g2 - d3 - a2 - d3 - a2 - b2 - f#2 - b2 - f#2 - e2 - b2 - e2 - b2 - c3 - g2 - c3 - g2 - d3 - a2 - d3 - a2 - b2 - f#2 - b2 - f#2 - e2 - b2 - e2 - b2 - g2 - g3 - g2 - g3 - e2 - e3 - e2 - e3 - c3 - c2 - c3 - c2 - d3 - d2 - d3 - d2 - e2 - - - b2 - - - c3 - - - g2 - - - d3 - - - a2 - - - g2 - - - d3 - - - c3 - g2 - c3 - g2 - d3 - a2 - d3 - a2 - b2 - f#2 - b2 - f#2 - e2 - b2 - e2 - b2 - g2 - d3 - g2 - d3 - e2 - b2 - e2 - b2 - c3 - g2 - c3 - g2 - d3 - a2 - d3 - a2 -'
   },
   minigolf: {
     beatsPerMinute: 100,
     leadWave: 'triangle',
     bassWave: 'sine',
-    lead: 'a4 - c5 - f5 - c5 - bb4 - d5 - f5 - d5 - c5 - e5 - g5 - e5 - a4 - c5 - f5 - - -',
-    bass: 'f2 - c3 - f2 - c3 - bb2 - f3 - bb2 - f3 - c3 - g3 - c3 - g3 - f2 - c3 - f2 - - -'
+    lead: 'a4 - c5 - f5 - c5 - bb4 - d5 - f5 - d5 - c5 - e5 - g5 - e5 - a4 - c5 - f5 - - - c5 - f5 c5 a4 - c5 - f5 - a#5 f5 d5 - f5 - g4 - c5 g4 e4 - g4 - c5 - f5 c5 a4 - c5 - a4 a4 d5 - a4 f4 d4 - d5 d5 g5 - d5 a#4 g4 - g4 g4 c5 - g4 e4 c4 - c5 c5 f5 - c5 a4 f4 - d4 f4 a4 f4 a4 d5 a4 f4 g4 a#4 d5 a#4 d5 g5 d5 a#4 c4 e4 g4 e4 g4 c5 g4 e4 f4 a4 c5 a4 c5 f5 c5 a4 a4 - c5 - f5 - c5 - bb4 - d5 - f5 - d5 - c5 - e5 - g5 - e5 - a4 - c5 - f5 - - - a#5 - - f5 - - d5 - f5 - - c5 - - a4 - c5 - - g4 - - e4 - d5 - - a4 - - f4 - a4 a4 d5 - a4 f4 d4 - d5 d5 g5 - d5 a#4 g4 - g4 g4 c5 - g4 e4 c4 - c5 c5 f5 - c5 a4 f4 - c5 - f5 c5 a4 - c5 - f5 - a#5 f5 d5 - f5 - g4 - c5 g4 e4 - g4 - c5 - f5 c5 a4 - c5 -',
+    bass: 'f2 - c3 - f2 - c3 - bb2 - f3 - bb2 - f3 - c3 - g3 - c3 - g3 - f2 - c3 - f2 - - - f2 - c3 - f2 - c3 - a#2 - f2 - a#2 - f2 - c3 - g2 - c3 - g2 - f2 - c3 - f2 - c3 - d3 - a2 - d3 - a2 - g2 - d3 - g2 - d3 - c3 - g2 - c3 - g2 - f2 - c3 - f2 - c3 - d3 - a2 - d3 - a2 - g2 - d3 - g2 - d3 - c3 - g2 - c3 - g2 - f2 - c3 - f2 - c3 - f2 - c3 - f2 - c3 - bb2 - f3 - bb2 - f3 - c3 - g3 - c3 - g3 - f2 - c3 - f2 - - - a#2 - - - f2 - - - f2 - - - c3 - - - c3 - - - g2 - - - d3 - - - a2 - - - d3 - a2 - d3 - a2 - g2 - d3 - g2 - d3 - c3 - g2 - c3 - g2 - f2 - c3 - f2 - c3 - f2 - c3 - f2 - c3 - a#2 - f2 - a#2 - f2 - c3 - g2 - c3 - g2 - f2 - c3 - f2 - c3 -'
   },
   bubbles: {
     beatsPerMinute: 132,
     leadWave: 'square',
     bassWave: 'triangle',
-    lead: 'f#5 a5 f#5 d5 f#5 a5 f#5 - e5 a5 e5 c#5 e5 a5 e5 - d5 f#5 d5 b4 d5 f#5 d5 - d5 g5 d5 b4 d5 g5 b5 -',
-    bass: 'd3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#3 - b2 - f#3 - g2 - d3 - g2 - d3 -'
+    lead: 'f#5 a5 f#5 d5 f#5 a5 f#5 - e5 a5 e5 c#5 e5 a5 e5 - d5 f#5 d5 b4 d5 f#5 d5 - d5 g5 d5 b4 d5 g5 b5 - a4 - d5 a4 f#4 - a4 - e5 - a5 e5 c#5 - e5 - f#5 - b5 f#5 d5 - f#5 - d5 - g5 d5 b4 - d5 - d5 d5 g5 - d5 b4 g4 - a4 a4 d5 - a4 f#4 d4 - e5 e5 a5 - e5 c#5 a4 - f#5 f#5 b5 - f#5 d5 b4 - g4 b4 d5 b4 d5 g5 d5 b4 d4 f#4 a4 f#4 a4 d5 a4 f#4 a4 c#5 e5 c#5 e5 a5 e5 c#5 b4 d5 f#5 d5 f#5 b5 f#5 d5 f#5 a5 f#5 d5 f#5 a5 f#5 - e5 a5 e5 c#5 e5 a5 e5 - d5 f#5 d5 b4 d5 f#5 d5 - d5 g5 d5 b4 d5 g5 b5 - e5 - - b4 - - g4 - a5 - - e5 - - c#5 - d5 - - a4 - - f#4 - b5 - - f#5 - - d5 - d5 d5 g5 - d5 b4 g4 - a4 a4 d5 - a4 f#4 d4 - e5 e5 a5 - e5 c#5 a4 - f#5 f#5 b5 - f#5 d5 b4 - a4 - d5 a4 f#4 - a4 - e5 - a5 e5 c#5 - e5 - f#5 - b5 f#5 d5 - f#5 - d5 - g5 d5 b4 - d5 -',
+    bass: 'd3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#3 - b2 - f#3 - g2 - d3 - g2 - d3 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#2 - b2 - f#2 - g2 - d3 - g2 - d3 - g2 - d3 - g2 - d3 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#2 - b2 - f#2 - g2 - d3 - g2 - d3 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#2 - b2 - f#2 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#3 - b2 - f#3 - g2 - d3 - g2 - d3 - e2 - - - b2 - - - a2 - - - e3 - - - d3 - - - a2 - - - b2 - - - f#2 - - - g2 - d3 - g2 - d3 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#2 - b2 - f#2 - d3 - a2 - d3 - a2 - a2 - e3 - a2 - e3 - b2 - f#2 - b2 - f#2 - g2 - d3 - g2 - d3 -'
   },
   marbles: {
     beatsPerMinute: 126,
     leadWave: 'square',
     bassWave: 'triangle',
-    lead: 'e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - b4 d5 g5 d5 b4 d5 g5 - a4 d5 f#5 d5 a4 d5 f#5 -',
-    bass: 'e2 e2 e3 e2 e2 e2 e3 e2 c3 c3 c2 c3 c3 c3 c2 c3 g2 g2 g3 g2 g2 g2 g3 g2 d3 d3 d2 d3 d3 d3 d2 d3'
+    lead: 'e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - b4 d5 g5 d5 b4 d5 g5 - a4 d5 f#5 d5 a4 d5 f#5 - b4 - e5 b4 g4 - b4 - g4 - c5 g4 e4 - g4 - d5 - g5 d5 b4 - d5 - a4 - d5 a4 f#4 - a4 - e5 e5 a5 - e5 c5 a4 - b4 b4 e5 - b4 g4 e4 - f#5 f#5 b5 - f#5 d#5 b4 - b4 b4 e5 - b4 g4 e4 - a4 c5 e5 c5 e5 a5 e5 c5 e4 g4 b4 g4 b4 e5 b4 g4 b4 d#5 f#5 d#5 f#5 b5 f#5 d#5 e4 g4 b4 g4 b4 e5 b4 g4 e5 g5 b5 g5 e5 g5 b5 - c5 e5 g5 e5 c5 e5 g5 - b4 d5 g5 d5 b4 d5 g5 - a4 d5 f#5 d5 a4 d5 f#5 - c5 - - g4 - - e4 - d5 - - a4 - - f#4 - e5 - - b4 - - g4 - b5 - - f#5 - - d5 - e5 e5 a5 - e5 c5 a4 - b4 b4 e5 - b4 g4 e4 - f#5 f#5 b5 - f#5 d#5 b4 - b4 b4 e5 - b4 g4 e4 - b4 - e5 b4 g4 - b4 - g4 - c5 g4 e4 - g4 - d5 - g5 d5 b4 - d5 - a4 - d5 a4 f#4 - a4 -',
+    bass: 'e2 e2 e3 e2 e2 e2 e3 e2 c3 c3 c2 c3 c3 c3 c2 c3 g2 g2 g3 g2 g2 g2 g3 g2 d3 d3 d2 d3 d3 d3 d2 d3 e2 e2 b2 e2 e2 e2 b2 e2 c3 c3 g2 c3 c3 c3 g2 c3 g2 g2 d3 g2 g2 g2 d3 g2 d3 d3 a2 d3 d3 d3 a2 d3 a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 b2 b2 f#2 b2 b2 b2 f#2 b2 e2 e2 b2 e2 e2 e2 b2 e2 a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 b2 b2 f#2 b2 b2 b2 f#2 b2 e2 e2 b2 e2 e2 e2 b2 e2 e2 e2 e3 e2 e2 e2 e3 e2 c3 c3 c2 c3 c3 c3 c2 c3 g2 g2 g3 g2 g2 g2 g3 g2 d3 d3 d2 d3 d3 d3 d2 d3 c3 - - - g2 - - - d3 - - - a2 - - - e2 - - - b2 - - - b2 - - - f#2 - - - a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 b2 b2 f#2 b2 b2 b2 f#2 b2 e2 e2 b2 e2 e2 e2 b2 e2 e2 e2 b2 e2 e2 e2 b2 e2 c3 c3 g2 c3 c3 c3 g2 c3 g2 g2 d3 g2 g2 g2 d3 g2 d3 d3 a2 d3 d3 d3 a2 d3'
   },
   marbleBuilder: {
     beatsPerMinute: 84,
     leadWave: 'sine',
     bassWave: 'triangle',
-    lead: 'e5 - - g5 - - b5 - f#5 - - a5 - - d5 - g5 - - e5 - - b4 - d5 - - b4 - - g4 -',
-    bass: 'c3 - - - g3 - - - d3 - - - a3 - - - e3 - - - b3 - - - g2 - - - d3 - - -'
+    lead: 'e5 - - g5 - - b5 - f#5 - - a5 - - d5 - g5 - - e5 - - b4 - d5 - - b4 - - g4 - g4 - c5 g4 e4 - g4 - a4 - d5 a4 f#4 - a4 - b4 - e5 b4 g4 - b4 - d5 - g5 d5 b4 - d5 - e5 e5 a5 - e5 c5 a4 - c5 c5 f5 - c5 a4 f4 - g4 g4 c5 - g4 e4 c4 - d5 d5 g5 - d5 b4 g4 - a4 c5 e5 c5 e5 a5 e5 c5 f4 a4 c5 a4 c5 f5 c5 a4 c4 e4 g4 e4 g4 c5 g4 e4 g4 b4 d5 b4 d5 g5 d5 b4 e5 - - g5 - - b5 - f#5 - - a5 - - d5 - g5 - - e5 - - b4 - d5 - - b4 - - g4 - d5 - - a4 - - f#4 - e5 - - b4 - - g4 - c5 - - g4 - - e4 - g5 - - d5 - - b4 - e5 e5 a5 - e5 c5 a4 - c5 c5 f5 - c5 a4 f4 - g4 g4 c5 - g4 e4 c4 - d5 d5 g5 - d5 b4 g4 - g4 - c5 g4 e4 - g4 - a4 - d5 a4 f#4 - a4 - b4 - e5 b4 g4 - b4 - d5 - g5 d5 b4 - d5 -',
+    bass: 'c3 - - - g3 - - - d3 - - - a3 - - - e3 - - - b3 - - - g2 - - - d3 - - - c3 - - - g2 - - - d3 - - - a2 - - - e2 - - - b2 - - - g2 - - - d3 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - - c3 - - - g3 - - - d3 - - - a3 - - - e3 - - - b3 - - - g2 - - - d3 - - - d3 - - - a2 - - - e2 - - - b2 - - - c3 - - - g2 - - - g2 - - - d3 - - - a2 - - - e3 - - - f2 - - - c3 - - - c3 - - - g2 - - - g2 - - - d3 - - - c3 - - - g2 - - - d3 - - - a2 - - - e2 - - - b2 - - - g2 - - - d3 - - -'
   },
   wordRunner: {
     beatsPerMinute: 138,
     leadWave: 'square',
     bassWave: 'sawtooth',
-    lead: 'a4 c5 e5 a5 e5 c5 e5 c5 g4 b4 d5 g5 d5 b4 d5 b4 f4 a4 c5 f5 c5 a4 c5 a4 e4 g#4 b4 e5 b4 g#4 b4 g#4',
-    bass: 'a2 a2 a3 a2 a2 a2 a3 a2 g2 g2 g3 g2 g2 g2 g3 g2 f2 f2 f3 f2 f2 f2 f3 f2 e2 e2 e3 e2 e2 e2 e3 e2'
+    lead: 'a4 c5 e5 a5 e5 c5 e5 c5 g4 b4 d5 g5 d5 b4 d5 b4 f4 a4 c5 f5 c5 a4 c5 a4 e4 g#4 b4 e5 b4 g#4 b4 g#4 e5 - a5 e5 c5 - e5 - d5 - g5 d5 b4 - d5 - c5 - f5 c5 a4 - c5 - b4 - e5 b4 g#4 - b4 - c5 c5 f5 - c5 a4 f4 - d5 d5 g5 - d5 b4 g4 - e5 e5 a5 - e5 c5 a4 - b4 b4 e5 - b4 g#4 e4 - f4 a4 c5 a4 c5 f5 c5 a4 g4 b4 d5 b4 d5 g5 d5 b4 a4 c5 e5 c5 e5 a5 e5 c5 e4 g#4 b4 g#4 b4 e5 b4 g#4 a4 c5 e5 a5 e5 c5 e5 c5 g4 b4 d5 g5 d5 b4 d5 b4 f4 a4 c5 f5 c5 a4 c5 a4 e4 g#4 b4 e5 b4 g#4 b4 g#4 d5 - - a4 - - f4 - a5 - - e5 - - c5 - e5 - - b4 - - g#4 - a5 - - e5 - - c5 - c5 c5 f5 - c5 a4 f4 - d5 d5 g5 - d5 b4 g4 - e5 e5 a5 - e5 c5 a4 - b4 b4 e5 - b4 g#4 e4 - e5 - a5 e5 c5 - e5 - d5 - g5 d5 b4 - d5 - c5 - f5 c5 a4 - c5 - b4 - e5 b4 g#4 - b4 -',
+    bass: 'a2 a2 a3 a2 a2 a2 a3 a2 g2 g2 g3 g2 g2 g2 g3 g2 f2 f2 f3 f2 f2 f2 f3 f2 e2 e2 e3 e2 e2 e2 e3 e2 a2 a2 e3 a2 a2 a2 e3 a2 g2 g2 d3 g2 g2 g2 d3 g2 f2 f2 c3 f2 f2 f2 c3 f2 e2 e2 b2 e2 e2 e2 b2 e2 f2 f2 c3 f2 f2 f2 c3 f2 g2 g2 d3 g2 g2 g2 d3 g2 a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 f2 f2 c3 f2 f2 f2 c3 f2 g2 g2 d3 g2 g2 g2 d3 g2 a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 a2 a2 a3 a2 a2 a2 a3 a2 g2 g2 g3 g2 g2 g2 g3 g2 f2 f2 f3 f2 f2 f2 f3 f2 e2 e2 e3 e2 e2 e2 e3 e2 d3 - - - a2 - - - a2 - - - e3 - - - e2 - - - b2 - - - a2 - - - e3 - - - f2 f2 c3 f2 f2 f2 c3 f2 g2 g2 d3 g2 g2 g2 d3 g2 a2 a2 e3 a2 a2 a2 e3 a2 e2 e2 b2 e2 e2 e2 b2 e2 a2 a2 e3 a2 a2 a2 e3 a2 g2 g2 d3 g2 g2 g2 d3 g2 f2 f2 c3 f2 f2 f2 c3 f2 e2 e2 b2 e2 e2 e2 b2 e2'
   }
 }
