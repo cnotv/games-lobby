@@ -1,3 +1,4 @@
+import levelUpSound from '@/assets/audio/bubble-shooter-level-up.wav'
 import type {
   MapperActionConfig,
   ControlsMapperGameConfig
@@ -22,6 +23,9 @@ export const WALL_LEFT = -(GRID_COLS / 2) * BUBBLE_DIAMETER
 export const WALL_RIGHT = (GRID_COLS / 2) * BUBBLE_DIAMETER
 export const INITIAL_FILLED_ROWS = 5
 export const LEVEL_MAX_FILLED_ROWS = 9
+export const LEVEL_BREAK_MS = 2600
+export const LEVEL_UP_SOUND = levelUpSound
+export const LEVEL_UP_VOLUME = 0.6
 export const MATCH_POINTS_PER_BUBBLE = 10
 export const COMBO_POINTS_PER_BUBBLE = 5
 export const SCORE_POPUP_DURATION_MS = 1100

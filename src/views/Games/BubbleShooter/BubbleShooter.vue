@@ -225,6 +225,7 @@ onUnmounted(() => {
           :score="game.score.value"
           :shot-count="game.shotCount.value"
           :level="game.level.value"
+          :is-level-break="game.isLevelBreak.value"
           :high-score="game.highScore.value"
           :is-game-over="game.isGameOver.value"
           :opponent-score="opponentPlayer?.score"

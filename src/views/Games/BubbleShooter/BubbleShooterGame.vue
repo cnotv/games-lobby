@@ -7,6 +7,7 @@ defineProps<{
   score: number
   shotCount: number
   level: number
+  isLevelBreak: boolean
   highScore: number
   isGameOver: boolean
   opponentScore?: number
@@ -59,6 +60,10 @@ onMounted(() => {
           <div class="bs-game__water-wave" />
         </div>
       </div>
+      <div v-if="isLevelBreak" class="bs-game__level-up lui-slide-in">
+        <span class="bs-game__level-up-title">Level cleared</span>
+        <span class="bs-game__level-up-next">Get ready for level {{ level }}</span>
+      </div>
       <div class="bs-game__popups">
         <div
           v-for="popup in scorePopups"
@@ -82,6 +87,32 @@ onMounted(() => {
 </template>
 
 <style scoped>
+.bs-game__level-up {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-2);
+  pointer-events: none;
+  font-family: var(--lui-font);
+  color: var(--lui-text-color);
+  text-shadow: var(--lui-text-shadow);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.bs-game__level-up-title {
+  font-size: var(--lui-text-important);
+  color: var(--lui-focus-color);
+}
+
+.bs-game__level-up-next {
+  font-size: var(--lui-text-small);
+}
+
 .bs-game {
   height: 100%;
   min-height: 0;

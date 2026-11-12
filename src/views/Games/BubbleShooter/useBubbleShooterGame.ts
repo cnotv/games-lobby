@@ -23,6 +23,9 @@ import {
   GAMEPAD_MAPPING,
   CONTROLS_GAME_ID,
   GAME_OVER_DELAY_MS,
+  LEVEL_BREAK_MS,
+  LEVEL_UP_SOUND,
+  LEVEL_UP_VOLUME,
   WATER_RISE_DURATION_MS,
   MATCH_POINTS_PER_BUBBLE,
   COMBO_POINTS_PER_BUBBLE,
@@ -632,6 +635,9 @@ const resetContextAndHandles = (ctx: BsGameContext, handles: SessionHandles): vo
   ctx.score.value = 0
   ctx.shotCount.value = 0
   ctx.level.value = 1
+  ctx.isLevelBreak.value = false
+  clearTimeout(ctx.levelBreakTimeoutId)
+  ctx.levelBreakTimeoutId = undefined
   ctx.isGameOver.value = false
   ctx.pendingGarbage.value = 0
   ctx.rowDropAccumulator = 0
@@ -683,11 +689,29 @@ const worldToScreenPercent = (
   return { xPercent: ((projected.x + 1) / 2) * 100, yPercent: ((1 - projected.y) / 2) * 100 }
 }
 
-const advanceLevel = (ctx: BsGameContext): void => {
-  ctx.level.value++
+const playLevelUpSound = (): void => {
+  const sound = new Audio(LEVEL_UP_SOUND)
+  sound.volume = LEVEL_UP_VOLUME
+  sound.play().catch(() => undefined)
+}
+
+const loadNextLevelGrid = (ctx: BsGameContext): void => {
   ctx.grid = createGrid(levelFilledRows(ctx.level.value), ctx.deps.colorCount.value)
   ctx.rowDropAccumulator = 0
   rebuildAllMeshes(ctx)
+  ctx.currentColor.value = pickNextColor(ctx.grid)
+  ctx.nextColor.value = pickNextColor(ctx.grid)
+  if (ctx.loadedMesh) ctx.loadedMesh.material = getMaterial(ctx, ctx.currentColor.value)
+  if (ctx.nextMesh) ctx.nextMesh.material = getMaterial(ctx, ctx.nextColor.value)
+  computeTrajectoryPoints(ctx)
+  ctx.isLevelBreak.value = false
+}
+
+const startLevelBreak = (ctx: BsGameContext): void => {
+  ctx.level.value++
+  ctx.isLevelBreak.value = true
+  playLevelUpSound()
+  ctx.levelBreakTimeoutId = setTimeout(() => loadNextLevelGrid(ctx), LEVEL_BREAK_MS)
 }
 
 const handleCollision = (
@@ -743,7 +767,7 @@ const handleCollision = (
 
   ctx.shotCount.value++
 
-  if (isGridEmpty(ctx.grid)) advanceLevel(ctx)
+  if (isGridEmpty(ctx.grid)) startLevelBreak(ctx)
 
   if (hasReachedFireLine(ctx.grid, FIRE_LINE_Y)) {
     ctx.onGameOverInternal()
@@ -767,7 +791,7 @@ const runGameLoop = (ctx: BsGameContext, delta: number): void => {
   tickPopParticles(ctx, delta)
   tickTrajectoryDots(ctx, delta)
 
-  if (!ctx.isGameOver.value) {
+  if (!ctx.isGameOver.value && !ctx.isLevelBreak.value) {
     ctx.rowDropAccumulator += delta * 1000
     const rowDropMs = SPEED_ROW_DROP_MS[ctx.deps.speed.value]
     if (ctx.rowDropAccumulator >= rowDropMs) {
@@ -854,7 +878,7 @@ const applyAim = (ctx: BsGameContext, angle: number): void => {
 }
 
 const shoot = (ctx: BsGameContext): void => {
-  if (ctx.isFlying || ctx.isGameOver.value || !ctx.scene) return
+  if (ctx.isFlying || ctx.isGameOver.value || ctx.isLevelBreak.value || !ctx.scene) return
   const color = ctx.currentColor.value
   const mesh = new THREE.Mesh(ctx.bubbleGeo, getMaterial(ctx, color))
   mesh.position.set(SHOOTER_X, SHOOTER_Y + SHOOTER_HEIGHT, 0)
@@ -1005,6 +1029,7 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
   const score = ref(0)
   const shotCount = ref(0)
   const level = ref(1)
+  const isLevelBreak = ref(false)
   const currentColor = ref<BubbleColor>('red')
   const nextColor = ref<BubbleColor>('blue')
   const isGameOver = ref(false)
@@ -1045,6 +1070,8 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
     score,
     shotCount,
     level,
+    isLevelBreak,
+    levelBreakTimeoutId: undefined,
     currentColor,
     nextColor,
     isGameOver,
@@ -1143,6 +1170,7 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
     score,
     shotCount,
     level,
+    isLevelBreak,
     currentColor,
     nextColor,
     isGameOver,
