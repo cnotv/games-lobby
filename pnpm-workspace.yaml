@@ -1,5 +1,2 @@
 packages:
   - packages/*
-
-patchedDependencies:
-  superdough@1.3.0: patches/superdough@1.3.0.patch
