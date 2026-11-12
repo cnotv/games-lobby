@@ -52,3 +52,26 @@ export const encodeWav = (channels: Float32Array[], sampleRate: number): ArrayBu
   )
   return buffer
 }
+
+/**
+ * Joins WAV files that share one format into a single file, so a long song can be rendered in
+ * short pieces and still play as one recording.
+ * @param chunks - complete files written by `encodeWav`, in playing order
+ * @returns one file whose audio is every chunk's, back to back
+ */
+export const joinWavChunks = (chunks: ArrayBuffer[]): ArrayBuffer => {
+  const [firstChunk] = chunks
+  const audio = chunks.map((chunk) => new Uint8Array(chunk, WAV_HEADER_BYTES))
+  const dataBytes = audio.reduce((total, bytes) => total + bytes.byteLength, 0)
+  const joined = new Uint8Array(WAV_HEADER_BYTES + dataBytes)
+  if (firstChunk !== undefined) joined.set(new Uint8Array(firstChunk, 0, WAV_HEADER_BYTES))
+  audio.reduce((offset, bytes) => {
+    joined.set(bytes, offset)
+    return offset + bytes.byteLength
+  }, WAV_HEADER_BYTES)
+  const view = new DataView(joined.buffer)
+  if (firstChunk === undefined) writeHeader(view, 2, 0, 0)
+  view.setUint32(4, 36 + dataBytes, true)
+  view.setUint32(40, dataBytes, true)
+  return joined.buffer
+}

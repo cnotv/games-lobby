@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi'
-import type { MidiTrackInfo } from '@webgamekit/audio'
+import { midiNoteToFreq, type MidiTrackInfo, type ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RhythmNote } from './config'
 import { parseMidiTrack } from './parseMidi'
 
@@ -29,3 +29,25 @@ export const buildStrudelChart = (
   trackIndex: number,
   difficulty: RgDifficulty
 ): RhythmNote[] => parseMidiTrack(midiBuffer, trackIndex, difficulty)
+
+const MILLISECONDS_PER_SECOND = 1000
+const BACKGROUND_VOLUME = 0.1
+
+/**
+ * Every pitched track of a Strudel song as notes to play behind the chart, for a song whose
+ * recording could not be rendered in time. The drums are left out.
+ * @param midiBuffer - The song as a MIDI file
+ * @returns The notes, in the order they play
+ */
+export const buildStrudelBackground = (midiBuffer: ArrayBuffer): ScheduledNote[] =>
+  new Midi(midiBuffer).tracks
+    .filter((track) => !track.instrument.percussion)
+    .flatMap((track) =>
+      track.notes.map((note) => ({
+        time: note.time * MILLISECONDS_PER_SECOND,
+        freq: midiNoteToFreq(note.midi),
+        duration: note.duration * MILLISECONDS_PER_SECOND,
+        volume: BACKGROUND_VOLUME
+      }))
+    )
+    .sort((left, right) => left.time - right.time)

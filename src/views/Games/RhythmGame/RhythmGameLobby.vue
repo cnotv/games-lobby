@@ -14,7 +14,7 @@ import {
   type MidiLibraryEntry
 } from './midiStorage'
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
-import { buildStrudelChart, listStrudelTracks } from './strudelSong'
+import { buildStrudelBackground, buildStrudelChart, listStrudelTracks } from './strudelSong'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgSong, RhythmNote } from './config'
@@ -59,9 +59,11 @@ const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
 const strudelSongs = ref<StrudelExample[]>([])
 const selectedStrudelId = ref<string | null>(null)
-const strudelSong = ref<{ wav: ArrayBuffer; midi: ArrayBuffer; tracks: MidiTrackInfo[] } | null>(
-  null
-)
+const strudelSong = ref<{
+  wav: ArrayBuffer | null
+  midi: ArrayBuffer
+  tracks: MidiTrackInfo[]
+} | null>(null)
 // The song is not playable until its recording is rendered, so the round cannot start before.
 const isRenderingStrudel = ref(false)
 
@@ -153,7 +155,17 @@ const emitStrudelSong = (difficulty: RgDifficulty): void => {
   const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
   if (song === undefined || strudelSong.value === null) return
   const chart = buildStrudelChart(strudelSong.value.midi, selectedTrackIndex.value, difficulty)
-  emit('midiParsed', chart, [], song.label, strudelSong.value.wav, DIFFICULTY_TEMPO[difficulty])
+  // Without a recording the song's own notes play behind the chart instead.
+  const background =
+    strudelSong.value.wav === null ? buildStrudelBackground(strudelSong.value.midi) : []
+  emit(
+    'midiParsed',
+    chart,
+    background,
+    song.label,
+    strudelSong.value.wav,
+    DIFFICULTY_TEMPO[difficulty]
+  )
 }
 
 const pickStrudelSong = async (strudelId: string): Promise<void> => {

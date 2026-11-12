@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { Midi } from '@tonejs/midi'
-import { listStrudelTracks, buildStrudelChart } from './strudelSong'
+import { listStrudelTracks, buildStrudelChart, buildStrudelBackground } from './strudelSong'
 
 const DRUM_CHANNEL = 9
 
@@ -54,5 +54,16 @@ describe('buildStrudelChart', () => {
       60, 61, 62, 63, 64, 65
     ])
     expect(buildStrudelChart(buffer, bass.index, 'hard')).toHaveLength(1)
+  })
+})
+
+describe('buildStrudelBackground', () => {
+  it('plays every pitched track behind the chart, in time order, and leaves the drums out', () => {
+    const background = buildStrudelBackground(buildMidi())
+
+    expect(background).toHaveLength(7)
+    expect(background.map((note) => note.time)).toEqual(
+      [...background.map((note) => note.time)].sort((a, b) => a - b)
+    )
   })
 })
