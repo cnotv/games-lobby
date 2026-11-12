@@ -58,12 +58,10 @@ useMenuNavigation((action) => {
 
 <template>
   <header class="game-header">
-    <div class="game-header__left">
-      <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
-        &lt;
-      </LobbyUIButton>
-      <GameSoundToggles />
-    </div>
+    <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
+      &lt;
+    </LobbyUIButton>
+    <GameSoundToggles />
     <div v-if="!fromLobby && roomId" class="game-header__room">
       <span class="game-header__room-label">Room:</span>
       <code class="game-header__room-id">{{ roomId.slice(0, 8) }}</code>
@@ -82,13 +80,9 @@ useMenuNavigation((action) => {
 
 <style scoped>
 .game-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-2);
+  display: contents;
 }
 
-.game-header__left,
 .game-header__room {
   display: flex;
   align-items: center;
