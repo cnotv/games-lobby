@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LobbyUIButton, LobbyUIConfirm } from '@/components/LobbyUI'
+import { Volume2, VolumeX } from 'lucide-vue-next'
+import { LobbyUIButton, LobbyUIConfirm, LobbyUIIconButton } from '@/components/LobbyUI'
+import { gameAudioMuted, setGameAudioMuted } from '@/utils/gameAudio'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
 import '@/assets/styles/lobby-ui.scss'
 
@@ -62,6 +64,14 @@ useMenuNavigation((action) => {
         &lt;
       </LobbyUIButton>
     </div>
+    <LobbyUIIconButton
+      :title="gameAudioMuted ? 'Turn sound on' : 'Turn sound off'"
+      :aria-label="gameAudioMuted ? 'Turn sound on' : 'Turn sound off'"
+      @click="setGameAudioMuted(!gameAudioMuted)"
+    >
+      <VolumeX v-if="gameAudioMuted" :size="20" />
+      <Volume2 v-else :size="20" />
+    </LobbyUIIconButton>
     <div v-if="!fromLobby && roomId" class="game-header__room">
       <span class="game-header__room-label">Room:</span>
       <code class="game-header__room-id">{{ roomId.slice(0, 8) }}</code>

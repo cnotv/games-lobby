@@ -48,6 +48,7 @@ import {
   stepGamepadAimAngle
 } from './bubbleShooterUtilities'
 import type { GameDeps, BsGameContext } from './types'
+import { playGameSound } from '@/utils/gameAudio'
 
 export type { GameDeps }
 
@@ -730,6 +731,7 @@ const handleCollision = (
   placeBubbleMesh(ctx, snapped.row, snapped.col, color)
 
   const matched = findMatch(snapped.row, snapped.col, ctx.grid)
+  playGameSound('bubbles', matched.length > 0 ? 'pop' : 'stick')
   if (matched.length > 0) {
     const matchPoints = matched.length * MATCH_POINTS_PER_BUBBLE
     matched.forEach(([r, c], i) => {
@@ -739,6 +741,7 @@ const handleCollision = (
       removeBubbleMesh(ctx, r, c)
     })
     const dangling = findDangling(ctx.grid)
+    if (dangling.length > 0) playGameSound('bubbles', 'drop')
     const comboPoints = dangling.length * COMBO_POINTS_PER_BUBBLE
     dangling.forEach(([r, c], i) => {
       const { x: px, y: py } = cellToWorld(r, c)
@@ -888,6 +891,7 @@ const shoot = (ctx: BsGameContext): void => {
   ctx.inFlightDx = Math.sin(ctx.aimAngle)
   ctx.inFlightDy = Math.cos(ctx.aimAngle)
   ctx.isFlying = true
+  playGameSound('bubbles', 'shoot')
   startWaitingRoll(ctx, ctx.nextColor.value)
   computeTrajectoryPoints(ctx)
 }
@@ -1095,6 +1099,7 @@ export const useBubbleShooterGame = (deps: GameDeps) => {
   }
 
   ctx.onGameOverInternal = (): void => {
+    playGameSound('bubbles', 'lose')
     ctx.isGameOver.value = true
     ctx.isFlying = false
     if (score.value > highScore.value) {

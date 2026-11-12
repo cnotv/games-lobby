@@ -1,9 +1,9 @@
 import { ref, onUnmounted, type Ref } from 'vue'
 import { createControls, loadMapping } from '@webgamekit/controls'
-import { createNoteScheduler } from '@webgamekit/audio'
 import {
   LANES,
   NOTE_SPEED_PX_PER_MS,
+  COMBO_THRESHOLDS,
   HIT_ZONE_RATIO,
   NOTE_HEIGHT,
   NOTE_RADIUS,
@@ -11,7 +11,7 @@ import {
   LANE_KEYS,
   CONTROLS_GAME_ID,
   CONTROLS_DEFAULT_MAPPING,
-  BACKING_VOLUME,
+  DIFFICULTY_TEMPO,
   type RgLane,
   type RhythmNote,
   type RgDifficulty,
@@ -19,6 +19,8 @@ import {
   type RgInstrument
 } from './config'
 import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
+import { slowChartNotes, slowScheduledNotes } from './tempo'
+import { createRhythmAudio } from './rhythmAudio'
 import {
   buildScheduledNotes,
   evaluateHit,
@@ -31,6 +33,7 @@ import {
 } from './rhythmGameUtilities'
 import type { RgScore } from '@/stores/rhythmGame'
 import type { ScheduledNote } from '@webgamekit/audio'
+import { playGameSound } from '@/utils/gameAudio'
 
 type Particle = { x: number; y: number; r: number; alpha: number; color: string; lane: RgLane }
 type LaneFlash = { alpha: number; result: 'perfect' | 'good' | 'miss' }
@@ -58,6 +61,29 @@ const resolveNotes = async (deps: GameDeps): Promise<RhythmNote[]> =>
   deps.song === 'custom' && deps.customNotes?.length
     ? deps.customNotes.map((n) => ({ ...n }))
     : fetchSongNotes(deps.song, deps.difficulty)
+
+const buildSongNotes = (
+  chart: RhythmNote[],
+  deps: GameDeps,
+  tempoRate: number
+): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
+  const gameNotes = buildScheduledNotes(chart, deps.instrument)
+  const scheduled = deps.backgroundNotes?.length
+    ? [...gameNotes, ...deps.backgroundNotes]
+    : gameNotes
+  return {
+    chart: slowChartNotes(chart, tempoRate),
+    scheduled: slowScheduledNotes(scheduled, tempoRate)
+  }
+}
+
+const playComboSound = (combo: number): void => {
+  if ((COMBO_THRESHOLDS as readonly number[]).includes(combo)) playGameSound('rhythm', 'combo')
+}
+
+// A Strudel or uploaded song carries its difficulty in its chart already; only a built-in song is slowed here.
+const resolveTempoRate = (deps: GameDeps): number =>
+  deps.song === 'custom' ? 1 : DIFFICULTY_TEMPO[deps.difficulty]
 
 const buildControlsMapping = (
   laneActive: Ref<boolean[]>,
@@ -96,6 +122,7 @@ const spawnParticles = (
   const cx = laneW * lane + laneW / 2
   const cy = canvas.height * HIT_ZONE_RATIO
   const count = result === 'perfect' ? 8 : result === 'good' ? 5 : 3
+  if (result === 'miss') playGameSound('rhythm', 'miss')
   const color = result === 'miss' ? '#ff4040' : LANE_COLORS[lane]
   Array.from({ length: count }, () => {
     particles.push({ x: cx, y: cy, r: 4 + Math.random() * 6, alpha: 1, color, lane })
@@ -308,7 +335,8 @@ export const useRhythmGame = (deps: GameDeps) => {
   const miss = ref(0)
   const laneActive = ref<boolean[]>([false, false, false, false])
 
-  const scheduler = createNoteScheduler()
+  const tempoRate = resolveTempoRate(deps)
+  const { scheduler, startBacking, stopBacking } = createRhythmAudio(tempoRate)
   let rafId = 0
   let notes: RhythmNote[] = []
   let particles: Particle[] = []
@@ -347,6 +375,7 @@ export const useRhythmGame = (deps: GameDeps) => {
       score.value += pts
       combo.value++
       if (combo.value > maxCombo.value) maxCombo.value = combo.value
+      playComboSound(combo.value)
       if (result === 'perfect') perfect.value++
       else good.value++
     } else {
@@ -405,7 +434,7 @@ export const useRhythmGame = (deps: GameDeps) => {
   const startBackingTrack = async (): Promise<void> => {
     const backing = await fetchSongBacking(deps.song).catch(() => null)
     if (backing === null || isDestroyed) return
-    await scheduler.startBacking(backing, BACKING_VOLUME).catch(() => undefined)
+    await startBacking(backing)
   }
 
   const init = async (): Promise<void> => {
@@ -415,16 +444,13 @@ export const useRhythmGame = (deps: GameDeps) => {
       deps.onSongEnd()
       return
     }
-    notes = loadedNotes
+    const song = buildSongNotes(loadedNotes, deps, tempoRate)
+    notes = song.chart
     songDurationMs.value = Math.max(
       deps.backgroundNotes?.at(-1)?.time ?? 0,
       notes.at(-1)?.time ?? 0
     )
-    const gameNotes = buildScheduledNotes(notes, deps.instrument)
-    const allNotes = deps.backgroundNotes?.length
-      ? [...gameNotes, ...deps.backgroundNotes]
-      : gameNotes
-    scheduler.start(allNotes, deps.startAt)
+    scheduler.start(song.scheduled, deps.startAt)
     startBackingTrack()
     lastFrameTime = performance.now()
     rafId = requestAnimationFrame(gameLoop)
@@ -432,6 +458,7 @@ export const useRhythmGame = (deps: GameDeps) => {
 
   const destroy = (): void => {
     isDestroyed = true
+    stopBacking()
     cancelAnimationFrame(rafId)
     scheduler.destroy()
     clearCanvas(deps.canvas.value)

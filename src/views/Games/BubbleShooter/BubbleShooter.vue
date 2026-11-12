@@ -19,6 +19,7 @@ import {
 import MultiplayerSidebar, { type MultiplayerPlayer } from '@/components/MultiplayerSidebar.vue'
 import GameTabBar from '@/components/GameTabBar.vue'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import '@/assets/styles/lobby-ui.scss'
 import BubbleShooterLobby from './BubbleShooterLobby.vue'
@@ -26,6 +27,7 @@ import BubbleShooterGame from './BubbleShooterGame.vue'
 import BubbleShooterSummary from './BubbleShooterSummary.vue'
 
 const store = useBubbleShooterStore()
+useGameAudio('bubbles', () => store.phase, { playing: 'start', summary: 'end' })
 const { phase, playerList, messages, winnerId, hostId, colorCount, speed } = storeToRefs(store)
 
 const storedProfile = loadProfile()

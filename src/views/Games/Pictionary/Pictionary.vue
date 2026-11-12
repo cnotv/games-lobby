@@ -16,6 +16,7 @@ import {
   PLAYER_COLORS
 } from './constants'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import PictionaryLobby from './PictionaryLobby.vue'
 import PictionaryChoosing from './PictionaryChoosing.vue'
@@ -28,6 +29,11 @@ import GameTabBar from '@/components/GameTabBar.vue'
 const route = useRoute()
 const router = useRouter()
 const store = usePictionaryStore()
+const { play } = useGameAudio('pictionary', () => store.phase, {
+  choosing: 'start',
+  intermission: 'roundEnd',
+  summary: 'end'
+})
 const {
   phase,
   round,
@@ -79,6 +85,7 @@ const session = usePictionarySession({
 })
 
 const { isHost, isDrawer, localPeerId } = session
+const COUNTDOWN_TICK_SECONDS = 5
 const showSidebar = ref(false)
 const lastReadCount = ref(0)
 const unreadCount = computed(() => Math.max(0, messages.value.length - lastReadCount.value))
@@ -88,6 +95,20 @@ watch(showSidebar, (open) => {
 watch(messages, () => {
   if (showSidebar.value) lastReadCount.value = messages.value.length
 })
+watch(
+  () => messages.value.length,
+  () => {
+    const latest = messages.value.at(-1)
+    if (latest?.kind === 'success') play('correct')
+    else if (latest?.senderId === 'system' && latest.text.endsWith('is very close!')) play('close')
+  }
+)
+watch(
+  () => revealedHintIndices.value.length,
+  (revealed, before) => {
+    if (revealed > before) play('hint')
+  }
+)
 
 const sidebarPlayers = computed((): MultiplayerPlayer[] =>
   playerList.value.map((p) => ({
@@ -110,6 +131,10 @@ const { timeLeft, intermissionLeft } = usePictionaryTimer({
   onChoiceTimeout: (choices) => {
     session.pickWord(choices[Math.floor(Math.random() * choices.length)])
   }
+})
+
+watch(timeLeft, (seconds) => {
+  if (phase.value === 'drawing' && seconds > 0 && seconds <= COUNTDOWN_TICK_SECONDS) play('tick')
 })
 
 const shareableLink = computed(() => {
@@ -155,7 +180,18 @@ const handleStroke = (event: StrokeEvent): void => {
 }
 
 const handleFill = (event: FillEvent): void => {
+  play('fill')
   session.broadcastFill(event)
+}
+
+const handleClear = (): void => {
+  play('clear')
+  session.broadcastClear()
+}
+
+const handlePickWord = (word: string): void => {
+  play('pick')
+  session.pickWord(word)
 }
 
 const handleUndoRedo = (dataUrl: string): void => {
@@ -230,7 +266,7 @@ onMounted(() => {
       :choices="round.choices"
       :time-left="timeLeft"
       :player-list="playerList"
-      @pick-word="session.pickWord($event)"
+      @pick-word="handlePickWord"
     />
 
     <PictionaryDrawing
@@ -246,7 +282,7 @@ onMounted(() => {
       @fill="handleFill"
       @undo="handleUndoRedo"
       @redo="handleUndoRedo"
-      @clear="session.broadcastClear()"
+      @clear="handleClear"
     />
 
     <PictionaryIntermission

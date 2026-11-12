@@ -53,6 +53,7 @@ import type {
   Rival,
   TrackPath
 } from '../types'
+import { playGameSound } from '@/utils/gameAudio'
 
 /** Everything one attempt at a level is dealt from, laid out along its course. */
 type LevelRun = {
@@ -468,6 +469,7 @@ export const useWordRun = (settings: RunSettings) => {
     const chosenLane = motion.lane(targetLane.value)
     if (scene) showPassedGate(scene, gateKey(runSerial, gateIndex), run, gateIndex, chosenLane)
     runState.value = passGate(runState.value, run.gates[gateIndex], chosenLane)
+    playGameSound('wordRunner', runState.value.results.at(-1)?.correct ? 'wordDone' : 'wrong')
   }
 
   const finishRun = (run: LevelRun): void => {
@@ -480,6 +482,7 @@ export const useWordRun = (settings: RunSettings) => {
     )
     score.settle(run.level.id, report.value.race.won)
     phase.value = 'finished'
+    playGameSound('wordRunner', 'finish')
   }
 
   /**

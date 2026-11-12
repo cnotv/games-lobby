@@ -97,6 +97,7 @@ import {
   type PlatformDefinition,
   type ObstacleDefinition
 } from './config'
+import { playGameSound } from '@/utils/gameAudio'
 
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T
 type GetToolsResult = UnwrapPromise<ReturnType<typeof getTools>>
@@ -840,6 +841,7 @@ const initRushScene = async (
         if (reactives.finished.value) return
         reactives.countdown.value = Math.max(0, reactives.countdown.value - RUSH_FALL_PENALTY)
         reactives.penaltyCount.value += 1
+        playGameSound('marbles', 'fall')
         if (state.marble) respawnAtLastSafe(state.marble, state.lastSafe)
       }
     )
@@ -853,6 +855,7 @@ const initRushScene = async (
       reactives.countdown.value = Math.max(0, reactives.countdown.value - delta)
       if (reactives.countdown.value <= 0) {
         reactives.finished.value = true
+        playGameSound('marbles', 'finish')
         const finalDistance = reactives.distance.value
         if (finalDistance > reactives.bestDistance.value) {
           reactives.isNewBest.value = true

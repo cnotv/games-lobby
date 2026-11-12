@@ -15,6 +15,7 @@ import {
 } from '@/utils/playerProfile'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import MultiplayerSidebar, { type MultiplayerPlayer } from '@/components/MultiplayerSidebar.vue'
 import GameTabBar from '@/components/GameTabBar.vue'
 import RhythmGameLobby from './RhythmGameLobby.vue'
@@ -24,6 +25,7 @@ import type { RgScore } from '@/stores/rhythmGame'
 import type { ScheduledNote } from '@webgamekit/audio'
 
 const store = useRhythmGameStore()
+useGameAudio('rhythm', () => store.phase, { summary: 'end' })
 const {
   phase,
   playerList,

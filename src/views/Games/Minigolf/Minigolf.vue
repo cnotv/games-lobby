@@ -17,6 +17,7 @@ import {
 } from '@/utils/playerProfile'
 import '@/assets/styles/lobby-ui.scss'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LoadingOverlay from '@/components/LoadingOverlay.vue'
 import type { LoadProgress } from '@webgamekit/threejs'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
@@ -29,6 +30,7 @@ import GameTabBar from '@/components/GameTabBar.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useMinigolfStore()
+useGameAudio('minigolf', () => store.phase, { playing: 'start', summary: 'end' })
 const { phase, playerList, holeCount, selectedHoles, currentHole, messages, hostId } =
   storeToRefs(store)
 

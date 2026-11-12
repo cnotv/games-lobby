@@ -49,6 +49,7 @@ import {
   type TrackConfig
 } from './config'
 import type { GameDeps, BallPosPayload } from './types'
+import { playGameSound } from '@/utils/gameAudio'
 
 type UnwrapPromise<T> = T extends Promise<infer U> ? U : T
 type GetToolsResult = UnwrapPromise<ReturnType<typeof getTools>>
@@ -217,6 +218,7 @@ const buildTimeline = (
       () => {
         state.elapsed.value += TIME_PENALTY_FALL
         state.penaltyCount.value += 1
+        playGameSound('marbles', 'fall')
         if (state.marbleMesh) respawn(state.marbleMesh, deps.track.value.spawnPosition)
       }
     )
@@ -230,6 +232,7 @@ const buildTimeline = (
       if (!state.marbleMesh || state.finished.value) return
       if (isInFinishZone(state.marbleMesh.position, deps.track.value)) {
         state.finished.value = true
+        playGameSound('marbles', 'finish')
         deps.onWin()
       }
     }

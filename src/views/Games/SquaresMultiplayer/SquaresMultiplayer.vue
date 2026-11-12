@@ -15,6 +15,7 @@ import {
   PLAYER_COLORS
 } from '@/utils/playerProfile'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import SquaresMultiplayerLobby from './SquaresMultiplayerLobby.vue'
 import SquaresMultiplayerGame from './SquaresMultiplayerGame.vue'
@@ -26,6 +27,11 @@ import GameTabBar from '@/components/GameTabBar.vue'
 const route = useRoute()
 const router = useRouter()
 const store = useSquaresMultiplayerStore()
+useGameAudio('squares', () => store.phase, {
+  playing: 'start',
+  intermission: 'roundEnd',
+  summary: 'end'
+})
 const {
   phase,
   playerList,

@@ -310,6 +310,35 @@ const renderWavBytes = async (
 }
 
 /**
+ * Evaluates a pattern and writes its notes as a MIDI file, returning it rather than downloading it.
+ * @param evaluate - evaluates the code and gives the pattern
+ * @param readCyclesPerSecond - the tempo the code set, read once it has been evaluated
+ * @param exportOptions - the cycle range
+ * @returns the file, or the reason it could not be made
+ */
+const renderMidiBytes = async (
+  evaluate: () => Promise<unknown>,
+  readCyclesPerSecond: () => number,
+  exportOptions: StrudelExportOptions
+): Promise<StrudelRenderResult> => {
+  try {
+    const pattern = await evaluate()
+    const cyclesPerSecond = readCyclesPerSecond()
+    const { buildPatternMidi } = await import('./patternMidi')
+    const bytes = buildPatternMidi(readScheduledHaps(pattern, exportOptions, cyclesPerSecond), {
+      beginCycle: exportOptions.startCycle,
+      cyclesPerSecond
+    })
+    return {
+      success: true,
+      file: bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)
+    }
+  } catch (error) {
+    return { success: false, errorMessage: describeError(error) }
+  }
+}
+
+/**
  * Loads the Strudel engine on demand, starts audio, loads the default sample kit and
  * returns a playback handle around one REPL (read-eval-print loop) instance. Evaluations
  * report their sliders and widgets, and every frame its playing notes, to the hooks.
@@ -457,6 +486,12 @@ export const loadDefaultStrudelPlayback = async (
             exportOptions
           )
       ),
+    renderToMidiBytes: (patternCode, exportOptions) =>
+      renderMidiBytes(
+        () => evaluateForExport(patternCode),
+        () => readCyclesPerSecond(replScheduler),
+        exportOptions
+      ),
     renderToWav: exportAs('wav', (pattern, cyclesPerSecond, exportOptions) =>
       renderStrudelPatternToWav(engine.audioModule, pattern, cyclesPerSecond, exportOptions)
     ),
@@ -601,6 +636,28 @@ export const renderStrudelCodeToWav = async (patternCode: string): Promise<Array
   await prepareInstrumentsForCode(patternCode)
   const playback = await loadSilentPlayback()
   const result = await playback.renderToWavBytes(patternCode, EXPORT_DEFAULT_OPTIONS)
+  if (!result.success || result.file === undefined) {
+    throw new Error(result.errorMessage ?? 'The code did not render.')
+  }
+  return result.file
+}
+
+/**
+ * Renders a whole song's notes to MIDI, outside the editor's own playback and without playing a
+ * sound, so a game can chart a pattern from the editor's Songs.
+ * @param patternCode - Strudel code that sets its own tempo
+ * @returns the MIDI file, covering one full play of the song
+ * @throws {Error} when the code does not render
+ */
+export const renderStrudelCodeToMidi = async (patternCode: string): Promise<ArrayBuffer> => {
+  await prepareInstrumentsForCode(patternCode)
+  const playback = await loadSilentPlayback()
+  const cycles = (await playback.measureRepetition(patternCode)) ?? STRUDEL_MAX_SONG_CYCLES
+  const result = await playback.renderToMidiBytes(patternCode, {
+    ...EXPORT_DEFAULT_OPTIONS,
+    format: 'midi',
+    endCycle: cycles
+  })
   if (!result.success || result.file === undefined) {
     throw new Error(result.errorMessage ?? 'The code did not render.')
   }

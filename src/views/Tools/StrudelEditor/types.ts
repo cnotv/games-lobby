@@ -78,6 +78,11 @@ export type StrudelPlayback = {
     patternCode: string,
     exportOptions: StrudelExportOptions
   ) => Promise<StrudelRenderResult>
+  /** Renders the cycles to a MIDI file and returns it instead of downloading it. */
+  renderToMidiBytes: (
+    patternCode: string,
+    exportOptions: StrudelExportOptions
+  ) => Promise<StrudelRenderResult>
   /**
    * How many cycles one play of the whole code lasts, every section included, read without
    * playing it; null when it does not repeat within `STRUDEL_MAX_SONG_CYCLES`.

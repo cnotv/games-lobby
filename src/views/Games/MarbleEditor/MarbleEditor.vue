@@ -16,6 +16,7 @@ import {
 import '@/assets/styles/lobby-ui.scss'
 import LobbyLayout from '@/layout/LobbyLayout.vue'
 import GameHeader from '@/components/GameHeader.vue'
+import { useGameAudio } from '@/composables/useGameAudio'
 import MultiplayerSidebar, { type MultiplayerPlayer } from '@/components/MultiplayerSidebar.vue'
 import GameTabBar from '@/components/GameTabBar.vue'
 import {
@@ -53,7 +54,7 @@ import {
   MARBLE_LINEAR_DAMPING,
   MARBLE_ANGULAR_DAMPING
 } from '../MarbleMadness/config'
-import type { CameraMode, MePhase, MarblePhysics } from './types'
+import type { CameraMode, MePhase, MarblePhysics, TrackPieceType } from './types'
 
 const CAMERA_MODE_LABELS: Record<CameraMode, string> = {
   third: 'Third',
@@ -64,6 +65,7 @@ const CAMERA_MODE_LABELS: Record<CameraMode, string> = {
 const isMobileDevice = isMobile()
 
 const store = useMarbleEditorStore()
+const { play } = useGameAudio('marbleBuilder', () => store.phase, { race: 'test' })
 const { phase, playerList, messages, hostId, raceStartTime } = storeToRefs(store)
 
 const CONFIG_STORAGE_KEY = 'marble-editor-lobby-config'
@@ -238,6 +240,16 @@ const persistLobbyConfig = (): void => {
       mapName: allMaps.value[selectedMapIndex.value]?.name
     })
   )
+}
+
+const handleAddPiece = (pieceType: TrackPieceType): void => {
+  play('place')
+  editor.addPiece(pieceType)
+}
+
+const handleDeletePiece = (): void => {
+  play('remove')
+  editor.removeSelectedPiece()
 }
 
 const handleConfigChange = (key: string, value: string | number): void => {
@@ -523,10 +535,10 @@ onUnmounted(() => {
           <EditorPalette
             class="me__sidebar"
             :selected-piece="editor.selectedPiece.value"
-            @add="editor.addPiece"
+            @add="handleAddPiece"
             @preview="editor.previewPiece"
             @recolor="editor.recolorSelectedPiece"
-            @delete-piece="editor.removeSelectedPiece"
+            @delete-piece="handleDeletePiece"
           />
         </div>
         <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
