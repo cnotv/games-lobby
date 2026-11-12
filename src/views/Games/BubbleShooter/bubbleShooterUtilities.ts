@@ -8,6 +8,7 @@ import {
   MIN_MATCH_SIZE,
   BUBBLE_COLORS,
   INITIAL_FILLED_ROWS,
+  LEVEL_MAX_FILLED_ROWS,
   GAMEPAD_AIM_SPEED_MIN,
   GAMEPAD_AIM_SPEED_MAX,
   GAMEPAD_AIM_RAMP_MS,
@@ -425,3 +426,19 @@ export const stepGamepadAimAngle = (
   )
   return { angle, holdMs: nextHoldMs }
 }
+
+/**
+ * Whether every bubble has been cleared from the grid.
+ * @param grid - Current grid state.
+ * @returns True when no cell holds a bubble.
+ */
+export const isGridEmpty = (grid: Grid): boolean =>
+  grid.every((row) => row.every((cell) => cell.color === null))
+
+/**
+ * How many rows a level starts with: one more per level, up to a cap that leaves room to shoot.
+ * @param level - Level number, starting at 1.
+ * @returns Number of pre-filled rows.
+ */
+export const levelFilledRows = (level: number): number =>
+  Math.min(INITIAL_FILLED_ROWS + level - 1, LEVEL_MAX_FILLED_ROWS)

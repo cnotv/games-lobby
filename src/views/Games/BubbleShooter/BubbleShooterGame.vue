@@ -6,6 +6,7 @@ import type { ScorePopupItem } from './types'
 defineProps<{
   score: number
   shotCount: number
+  level: number
   highScore: number
   isGameOver: boolean
   opponentScore?: number
@@ -32,6 +33,7 @@ onMounted(() => {
         <div class="bs-game__hud-left">
           <span class="bs-game__label">Score</span>
           <span class="bs-game__value">{{ score }}</span>
+          <span class="bs-game__best">Level {{ level }}</span>
           <span v-if="highScore > 0" class="bs-game__best">Best: {{ highScore }}</span>
         </div>
         <div v-if="opponentName !== undefined" class="bs-game__hud-right">

@@ -12,6 +12,8 @@ import {
   hasReachedFireLine,
   addGarbageRows,
   addTopRows,
+  isGridEmpty,
+  levelFilledRows,
   computeGamepadAimSpeed,
   stepGamepadAimAngle
 } from './bubbleShooterUtilities'
@@ -23,6 +25,8 @@ import {
   HEX_ROW_HEIGHT,
   BUBBLE_RADIUS,
   FIRE_LINE_Y,
+  INITIAL_FILLED_ROWS,
+  LEVEL_MAX_FILLED_ROWS,
   WALL_LEFT,
   WALL_RIGHT,
   GAMEPAD_AIM_SPEED_MIN,
@@ -360,5 +364,29 @@ describe('addTopRows', () => {
     Array.from({ length: colCount(1) }, (_, c) => c).forEach((c) => {
       expect(newGrid[1][c].color).not.toBeNull()
     })
+  })
+})
+
+describe('isGridEmpty', () => {
+  it('is true when no cell holds a bubble', () => {
+    expect(isGridEmpty(createGrid(0))).toBe(true)
+  })
+
+  it('is false while any bubble remains', () => {
+    expect(isGridEmpty(createGrid(1))).toBe(false)
+  })
+})
+
+describe('levelFilledRows', () => {
+  it('starts at the initial row count on level one', () => {
+    expect(levelFilledRows(1)).toBe(INITIAL_FILLED_ROWS)
+  })
+
+  it('adds a row per level', () => {
+    expect(levelFilledRows(3)).toBe(INITIAL_FILLED_ROWS + 2)
+  })
+
+  it('never fills past the cap', () => {
+    expect(levelFilledRows(100)).toBe(LEVEL_MAX_FILLED_ROWS)
   })
 })
