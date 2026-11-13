@@ -1,7 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { Midi } from '@tonejs/midi'
-import { listStrudelTracks, buildStrudelChart, buildStrudelBackground } from './strudelSong'
+import {
+  listStrudelTracks,
+  buildStrudelChart,
+  buildLiveSongCode,
+  songMsFromPosition
+} from './strudelSong'
 
 const DRUM_CHANNEL = 9
 
@@ -57,13 +62,31 @@ describe('buildStrudelChart', () => {
   })
 })
 
-describe('buildStrudelBackground', () => {
-  it('plays every pitched track behind the chart, in time order, and leaves the drums out', () => {
-    const background = buildStrudelBackground(buildMidi())
+describe('buildLiveSongCode', () => {
+  it.each([
+    [0.5, 1, 'setcps(0.5)'],
+    [0.5, 0.75, 'setcps(0.375)'],
+    [1, 0.85, 'setcps(0.85)']
+  ])(
+    'plays a song written at %f cycles a second at %f of its speed with %s last',
+    (cyclesPerSecond, tempoRate, lastLine) => {
+      const code = buildLiveSongCode('setcps(1)\ns("bd sd")', cyclesPerSecond, tempoRate)
 
-    expect(background).toHaveLength(7)
-    expect(background.map((note) => note.time)).toEqual(
-      [...background.map((note) => note.time)].sort((a, b) => a - b)
-    )
-  })
+      expect(code.startsWith('setcps(1)\ns("bd sd")')).toBe(true)
+      expect(code.trim().split('\n').at(-1)).toBe(lastLine)
+    }
+  )
+})
+
+describe('songMsFromPosition', () => {
+  it.each([
+    [0, 0.5, 0],
+    [1, 0.5, 2000],
+    [3, 0.375, 8000]
+  ])(
+    'reads cycle %f at %f cycles a second as %f ms into the song',
+    (cycle, cyclesPerSecond, ms) => {
+      expect(songMsFromPosition({ cycle, cyclesPerSecond })).toBeCloseTo(ms)
+    }
+  )
 })

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ChevronLeft } from 'lucide-vue-next'
 import { LobbyUIButton, LobbyUIConfirm } from '@/components/LobbyUI'
 import GameSoundToggles from '@/components/GameSoundToggles.vue'
 import { useMenuNavigation } from '@/composables/useMenuNavigation'
@@ -58,8 +59,14 @@ useMenuNavigation((action) => {
 
 <template>
   <header class="game-header">
-    <LobbyUIButton variant="ghost" :title="backLabel" :aria-label="backLabel" @click="handleBack">
-      &lt;
+    <LobbyUIButton
+      variant="ghost"
+      icon
+      :title="backLabel"
+      :aria-label="backLabel"
+      @click="handleBack"
+    >
+      <ChevronLeft aria-hidden="true" />
     </LobbyUIButton>
     <GameSoundToggles />
     <div v-if="!fromLobby && roomId" class="game-header__room">

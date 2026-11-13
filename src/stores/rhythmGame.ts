@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, shallowRef, computed } from 'vue'
+import { ref, computed } from 'vue'
 import { electHostId } from '../utils/electHostId'
 import type { ChatMessage } from '@webgamekit/chat'
 import type { ScheduledNote } from '@webgamekit/audio'
@@ -44,7 +44,8 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
   const instrument = ref<RgInstrument>('piano')
   const customNotes = ref<RhythmNote[] | null>(null)
   const customSongName = ref('')
-  const customBacking = shallowRef<ArrayBuffer | null>(null)
+  /** A Strudel song plays live from this code, its tempo already set for the round. */
+  const customStrudelCode = ref<string | null>(null)
   const customTempoRate = ref(1)
   const backgroundNotes = ref<ScheduledNote[] | null>(null)
 
@@ -100,7 +101,7 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
     instrument,
     customNotes,
     customSongName,
-    customBacking,
+    customStrudelCode,
     customTempoRate,
     backgroundNotes,
     playerList,

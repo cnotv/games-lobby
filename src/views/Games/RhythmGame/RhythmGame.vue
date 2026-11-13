@@ -35,7 +35,7 @@ const {
   instrument,
   customNotes,
   customSongName,
-  customBacking,
+  customStrudelCode,
   customTempoRate,
   backgroundNotes,
   solo
@@ -101,7 +101,7 @@ const handleLeaveRoom = (): void => {
   store.customNotes = null
   store.backgroundNotes = null
   store.customSongName = ''
-  store.customBacking = null
+  store.customStrudelCode = null
   store.customTempoRate = 1
   leaveRoom()
 }
@@ -110,10 +110,10 @@ const handleMidiParsed = (
   gameNotes: RhythmNote[],
   bgNotes: ScheduledNote[],
   songName: string,
-  backing: ArrayBuffer | null = null,
+  strudelCode: string | null = null,
   tempoRate = 1
 ): void => {
-  store.customBacking = backing
+  store.customStrudelCode = strudelCode
   store.customTempoRate = tempoRate
   store.customNotes = gameNotes.length > 0 ? gameNotes : null
   store.backgroundNotes = bgNotes.length > 0 ? bgNotes : null
@@ -125,7 +125,7 @@ const handleSongPicked = (pickedSong: RgSong): void => {
   store.customNotes = null
   store.backgroundNotes = null
   store.customSongName = ''
-  store.customBacking = null
+  store.customStrudelCode = null
   store.customTempoRate = 1
   store.song = pickedSong
 }
@@ -241,7 +241,7 @@ onMounted(() => {
       :instrument="instrument"
       :custom-notes="customNotes"
       :background-notes="backgroundNotes"
-      :custom-backing="customBacking"
+      :custom-strudel-code="customStrudelCode"
       :custom-tempo-rate="customTempoRate"
       :song-name="customSongName || undefined"
       :start-at="gameStartAt"

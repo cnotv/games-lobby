@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { LobbyUIButton, LobbyUIRow, LobbyUIWizard } from '@/components/LobbyUI'
 import '@/assets/styles/lobby-ui.scss'
 import RhythmGameSummary from './RhythmGameSummary.vue'
@@ -14,7 +14,8 @@ import {
   type MidiLibraryEntry
 } from './midiStorage'
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
-import { buildStrudelBackground, buildStrudelChart, listStrudelTracks } from './strudelSong'
+import { buildLiveSongCode, buildStrudelChart, listStrudelTracks } from './strudelSong'
+import { strudelSongNotes } from './strudelNotesCache'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgSong, RhythmNote } from './config'
@@ -45,7 +46,7 @@ const emit = defineEmits<{
     gameNotes: RhythmNote[],
     backgroundNotes: ScheduledNote[],
     songName: string,
-    backing?: ArrayBuffer | null,
+    strudelCode?: string | null,
     tempoRate?: number
   ]
   songPicked: [song: RgSong]
@@ -60,12 +61,14 @@ const STRUDEL_SONG_PREFIX = 'strudel:'
 const strudelSongs = ref<StrudelExample[]>([])
 const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{
-  wav: ArrayBuffer | null
+  code: string
+  cyclesPerSecond: number
   midi: ArrayBuffer
   tracks: MidiTrackInfo[]
 } | null>(null)
-// The song is not playable until its recording is rendered, so the round cannot start before.
-const isRenderingStrudel = ref(false)
+// The song is not playable until it is rendered, so the round cannot start before. Only the
+// song picked last counts: an earlier pick still rendering is ignored when it finishes.
+const renderingStrudelId = ref<string | null>(null)
 
 const loadLibrary = async (): Promise<void> => {
   library.value = await midiStorageList()
@@ -77,7 +80,27 @@ const loadStrudelSongs = async (): Promise<void> => {
   strudelSongs.value = ELECTRO_TUNES
 }
 
-onMounted(() => Promise.all([loadLibrary(), loadStrudelSongs()]))
+const lobbyClosed = { value: false }
+const ACTIVATION_EVENTS = ['pointerdown', 'keydown'] as const
+
+// Writing every song's notes ahead makes a pick instant, and stops when the lobby closes so it
+// never competes with a round's song for the engine. It waits for the player's first click or key:
+// the engine cannot start audio before one, and would wait for it with every pick queued behind.
+const writeSongsAhead = (): void => {
+  ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
+  void strudelSongNotes.prefetch(strudelSongs.value, () => lobbyClosed.value)
+}
+
+onMounted(async () => {
+  await Promise.all([loadLibrary(), loadStrudelSongs()])
+  if (lobbyClosed.value) return
+  if (navigator.userActivation?.hasBeenActive) writeSongsAhead()
+  else ACTIVATION_EVENTS.forEach((name) => window.addEventListener(name, writeSongsAhead))
+})
+onUnmounted(() => {
+  lobbyClosed.value = true
+  ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
+})
 
 const selectedEntry = computed(() => library.value.find((e) => e.id === selectedMidiId.value))
 const availableTracks = computed(
@@ -154,17 +177,15 @@ const resolveTrackLabel = (midiId: string, trackIndex: number): string => {
 const emitStrudelSong = (difficulty: RgDifficulty): void => {
   const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
   if (song === undefined || strudelSong.value === null) return
-  const chart = buildStrudelChart(strudelSong.value.midi, selectedTrackIndex.value, difficulty)
-  // Without a recording the song's own notes play behind the chart instead.
-  const background =
-    strudelSong.value.wav === null ? buildStrudelBackground(strudelSong.value.midi) : []
+  const { code, cyclesPerSecond, midi } = strudelSong.value
+  const tempoRate = DIFFICULTY_TEMPO[difficulty]
   emit(
     'midiParsed',
-    chart,
-    background,
+    buildStrudelChart(midi, selectedTrackIndex.value, difficulty),
+    [],
     song.label,
-    strudelSong.value.wav,
-    DIFFICULTY_TEMPO[difficulty]
+    buildLiveSongCode(code, cyclesPerSecond, tempoRate),
+    tempoRate
   )
 }
 
@@ -173,22 +194,23 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
-  isRenderingStrudel.value = true
+  strudelSong.value = null
+  renderingStrudelId.value = strudelId
+  const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
   try {
-    // Loaded here so the whole Strudel engine only downloads for a player who picks one of its songs.
-    const { renderStrudelCodeToSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
-    const { wav, midi } = await renderStrudelCodeToSong(song.code)
+    const { midi, cyclesPerSecond } = await strudelSongNotes.notesFor(song.id, song.code)
+    if (!isStillPicked()) return
     const tracks = listStrudelTracks(midi)
     if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
-    strudelSong.value = { wav, midi, tracks }
+    strudelSong.value = { code: song.code, cyclesPerSecond, midi, tracks }
     selectedTrackIndex.value = tracks[0].index
     emitStrudelSong(props.difficulty)
   } catch {
+    if (!isStillPicked()) return
     selectedStrudelId.value = null
-    strudelSong.value = null
     emit('songPicked', SONGS[0].id)
   } finally {
-    isRenderingStrudel.value = false
+    if (renderingStrudelId.value === strudelId) renderingStrudelId.value = null
   }
 }
 
@@ -198,6 +220,7 @@ const pickSong = async (songValue: string): Promise<void> => {
     return
   }
   selectedStrudelId.value = null
+  renderingStrudelId.value = null
   strudelSong.value = null
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
@@ -252,6 +275,7 @@ const handleFileChange = async (event: Event): Promise<void> => {
   const firstTrack = tracks[0]
   if (!firstTrack) return
   selectedStrudelId.value = null
+  renderingStrudelId.value = null
   strudelSong.value = null
   selectedMidiId.value = id
   selectedTrackIndex.value = firstTrack.index
@@ -282,7 +306,7 @@ const handleDelete = async (): Promise<void> => {
     :config-fields="configFields"
     :controls="CONTROLS_CONFIG"
     :show-results="showResults"
-    :can-start="!isRenderingStrudel"
+    :can-start="renderingStrudelId === null"
     @update:player-name="emit('update:playerName', $event)"
     @update:player-color="emit('update:playerColor', $event)"
     @name-change="emit('nameChange')"

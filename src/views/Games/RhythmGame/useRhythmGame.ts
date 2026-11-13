@@ -51,8 +51,8 @@ type GameDeps = {
   startAt: number
   customNotes?: RhythmNote[] | null
   backgroundNotes?: ScheduledNote[] | null
-  /** The recording of a song that was rendered rather than shipped. */
-  customBacking?: ArrayBuffer | null
+  /** A Strudel song's code, played live with the round; it holds the melody itself. */
+  customStrudelCode?: string | null
   customTempoRate?: number
   onScoreUpdate: (data: RgScore) => void
   onSongEnd: () => void
@@ -68,7 +68,7 @@ const buildSongNotes = (
   deps: GameDeps,
   tempoRate: number
 ): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
-  const gameNotes = buildScheduledNotes(chart, deps.instrument)
+  const gameNotes = deps.customStrudelCode ? [] : buildScheduledNotes(chart, deps.instrument)
   const scheduled = deps.backgroundNotes?.length
     ? [...gameNotes, ...deps.backgroundNotes]
     : gameNotes
@@ -332,7 +332,10 @@ export const useRhythmGame = (deps: GameDeps) => {
   const laneActive = ref<boolean[]>([false, false, false, false])
 
   const tempoRate = resolveTempoRate(deps)
-  const { scheduler, startBacking, stopBacking } = createRhythmAudio(tempoRate)
+  const { scheduler, readCurrentMs, startSong, stopSong } = createRhythmAudio(
+    tempoRate,
+    deps.customStrudelCode
+  )
   let rafId = 0
   let notes: RhythmNote[] = []
   let particles: Particle[] = []
@@ -357,7 +360,7 @@ export const useRhythmGame = (deps: GameDeps) => {
     })
 
   const pressLane = (lane: RgLane): void => {
-    const currentMs = scheduler.currentMs
+    const currentMs = readCurrentMs()
 
     const index = findHittableNote(notes, lane, currentMs)
     if (index === -1) return
@@ -387,7 +390,7 @@ export const useRhythmGame = (deps: GameDeps) => {
   const gameLoop = (timestamp: number): void => {
     const dt = timestamp - lastFrameTime
     lastFrameTime = timestamp
-    const currentMs = scheduler.currentMs
+    const currentMs = readCurrentMs()
     const canvas = deps.canvas.value
     if (!canvas) {
       rafId = requestAnimationFrame(gameLoop)
@@ -418,20 +421,12 @@ export const useRhythmGame = (deps: GameDeps) => {
     const lastNote = notes.at(-1)
     if (lastNote && currentMs > lastNote.time + 2000 && notes.every((n) => n.hit !== undefined)) {
       scheduler.stop()
+      stopSong()
       deps.onSongEnd()
       return
     }
 
     rafId = requestAnimationFrame(gameLoop)
-  }
-
-  // A missing backing track is only a quieter round, so the notes play on without it.
-  const startBackingTrack = async (): Promise<void> => {
-    // Decoding takes ownership of the bytes, so a rendered recording is handed over as a copy.
-    const backing =
-      deps.customBacking?.slice(0) ?? (await fetchSongBacking(deps.song).catch(() => null))
-    if (backing === null || isDestroyed) return
-    await startBacking(backing)
   }
 
   const init = async (): Promise<void> => {
@@ -448,14 +443,14 @@ export const useRhythmGame = (deps: GameDeps) => {
       notes.at(-1)?.time ?? 0
     )
     scheduler.start(song.scheduled, deps.startAt)
-    startBackingTrack()
+    startSong(deps.startAt, () => fetchSongBacking(deps.song).catch(() => null))
     lastFrameTime = performance.now()
     rafId = requestAnimationFrame(gameLoop)
   }
 
   const destroy = (): void => {
     isDestroyed = true
-    stopBacking()
+    stopSong()
     cancelAnimationFrame(rafId)
     scheduler.destroy()
     clearCanvas(deps.canvas.value)

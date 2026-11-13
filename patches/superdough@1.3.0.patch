@@ -1,0 +1,36 @@
+diff --git a/dist/index.mjs b/dist/index.mjs
+index da81977b3a8f9cb8af08440c61990437041f69b7..a2a5b8c561f04d028386dafc58c1cb7637039cd7 100644
+--- a/dist/index.mjs
++++ b/dist/index.mjs
+@@ -96,7 +96,7 @@ const st = /* @__PURE__ */ new Map(), ut = Symbol("nodePoolKey"), hn = (e) => !!
+   const n = st.get(e) ?? [];
+   let o, a = !1;
+   for (; n.length; )
+-    if (o = n.pop()?.deref(), o != null && Gn(o)) {
++    if (o = n.pop()?.deref(), o != null && o.context === z() && Gn(o)) {
+       a = !0;
+       break;
+     }
+diff --git a/nodePools.mjs b/nodePools.mjs
+index 90b4c0ae7e968a4bb78430ba9384c60f69910af9..ab9a11ca1321b4044192af9f348303a7180207a0 100644
+--- a/nodePools.mjs
++++ b/nodePools.mjs
+@@ -5,6 +5,8 @@ Copyright (C) 2025 Strudel contributors - see <https://codeberg.org/uzu/strudel/
+ This program is free software: you can redistribute it and/or modify it under the terms of the GNU Affero General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version. This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Affero General Public License for more details. You should have received a copy of the GNU Affero General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+ 
++import { getAudioContext } from './audioContext.mjs';
++
+ const nodePools = new Map();
+ const POOL_KEY = Symbol('nodePoolKey');
+ 
+@@ -71,7 +73,8 @@ export const getNodeFromPool = (key, factory) => {
+   while (pool.length) {
+     const ref = pool.pop();
+     node = ref?.deref();
+-    if (node != null && isNodeAlive(node)) {
++    // A node pooled by another audio context (an offline render) cannot be connected to this one.
++    if (node != null && node.context === getAudioContext() && isNodeAlive(node)) {
+       found = true;
+       break;
+     }

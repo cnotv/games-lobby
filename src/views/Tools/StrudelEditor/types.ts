@@ -52,6 +52,12 @@ export type StrudelExportOptions = {
   fileName: string
 }
 
+/** A song playing live through the engine, for a game that keeps time with it. */
+export type StrudelLiveSong = {
+  readPosition: () => StrudelPlaybackPosition
+  stop: () => Promise<void>
+}
+
 export type StrudelExportStatus = 'idle' | 'rendering' | 'done' | 'error'
 
 /** Where the scheduler is: the cycle it is playing and how fast cycles pass. */

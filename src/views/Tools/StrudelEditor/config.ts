@@ -1223,14 +1223,6 @@ export const EXPORT_DEFAULT_OPTIONS: StrudelExportOptions = {
 export const STRUDEL_MAX_REPETITIONS_PER_CYCLE = 16
 /** The longest song the export measures, in cycles: a piece that has not repeated by then keeps the count it has. */
 export const STRUDEL_MAX_SONG_CYCLES = 64
-/** How many cycles of a song one offline render holds; more at once exhausts the page's memory. */
-export const STRUDEL_SONG_RENDER_CHUNK_CYCLES = 4
-/** How long a song's recording may take to render before a game settles for its notes. */
-export const STRUDEL_SONG_RENDER_BUDGET_MS = 40_000
-/** The longest a song is rendered for a game, in cycles; the rest of a longer piece is left out. */
-export const STRUDEL_SONG_RENDER_MAX_CYCLES = 32
-/** Lower than the editor's own export, since a game plays the recording rather than keeping it. */
-export const STRUDEL_SONG_RENDER_SAMPLE_RATE = 32000
 /** The quiet after the last keystroke before the open export tab measures the code again. */
 export const STRUDEL_EXPORT_MEASURE_DELAY_MS = 600
 /** The narrowest a cycle may be drawn on the timeline, in pixels; a longer song scrolls sideways. */

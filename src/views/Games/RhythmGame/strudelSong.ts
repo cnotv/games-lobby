@@ -1,5 +1,5 @@
 import { Midi } from '@tonejs/midi'
-import { midiNoteToFreq, type MidiTrackInfo, type ScheduledNote } from '@webgamekit/audio'
+import type { MidiTrackInfo } from '@webgamekit/audio'
 import type { RgDifficulty, RhythmNote } from './config'
 import { parseMidiTrack } from './parseMidi'
 
@@ -31,23 +31,25 @@ export const buildStrudelChart = (
 ): RhythmNote[] => parseMidiTrack(midiBuffer, trackIndex, difficulty)
 
 const MILLISECONDS_PER_SECOND = 1000
-const BACKGROUND_VOLUME = 0.1
 
 /**
- * Every pitched track of a Strudel song as notes to play behind the chart, for a song whose
- * recording could not be rendered in time. The drums are left out.
- * @param midiBuffer - The song as a MIDI file
- * @returns The notes, in the order they play
+ * The code a round plays live: the song, then its tempo set last so it wins over the song's own,
+ * slowed to the difficulty's rate. Changing the tempo, unlike a slowed recording, keeps the pitch.
+ * @param songCode - The song as written
+ * @param cyclesPerSecond - The tempo the song sets for itself
+ * @param tempoRate - Share of full speed, 1 for as written
+ * @returns Strudel code that plays the whole song at the round's tempo
  */
-export const buildStrudelBackground = (midiBuffer: ArrayBuffer): ScheduledNote[] =>
-  new Midi(midiBuffer).tracks
-    .filter((track) => !track.instrument.percussion)
-    .flatMap((track) =>
-      track.notes.map((note) => ({
-        time: note.time * MILLISECONDS_PER_SECOND,
-        freq: midiNoteToFreq(note.midi),
-        duration: note.duration * MILLISECONDS_PER_SECOND,
-        volume: BACKGROUND_VOLUME
-      }))
-    )
-    .sort((left, right) => left.time - right.time)
+export const buildLiveSongCode = (
+  songCode: string,
+  cyclesPerSecond: number,
+  tempoRate: number
+): string => `${songCode}\nsetcps(${cyclesPerSecond * tempoRate})\n`
+
+/**
+ * How far into the song the live player is, so the falling notes follow what is heard.
+ * @param position - The Strudel scheduler's cycle and tempo
+ * @returns Milliseconds since the song began
+ */
+export const songMsFromPosition = (position: { cycle: number; cyclesPerSecond: number }): number =>
+  (position.cycle / position.cyclesPerSecond) * MILLISECONDS_PER_SECOND

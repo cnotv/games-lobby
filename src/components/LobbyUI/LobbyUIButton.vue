@@ -6,15 +6,28 @@ withDefaults(
     disabled?: boolean
     autofocus?: boolean
     stacked?: boolean
+    /** An icon in place of a label, drawn at the size and weight of the button's text. */
+    icon?: boolean
   }>(),
-  { variant: 'primary', size: 'md', disabled: false, autofocus: false, stacked: false }
+  {
+    variant: 'primary',
+    size: 'md',
+    disabled: false,
+    autofocus: false,
+    stacked: false,
+    icon: false
+  }
 )
 </script>
 
 <template>
   <button
     class="lui-btn"
-    :class="[`lui-btn--${variant}`, `lui-btn--${size}`, { 'lui-btn--stacked': stacked }]"
+    :class="[
+      `lui-btn--${variant}`,
+      `lui-btn--${size}`,
+      { 'lui-btn--stacked': stacked, 'lui-btn--icon': icon }
+    ]"
     type="button"
     :disabled="disabled"
     :autofocus="autofocus"
@@ -83,7 +96,15 @@ withDefaults(
   flex-shrink: 0;
   width: 1.6em;
   height: 1.6em;
-  filter: drop-shadow(2px 2px 0 #000);
+  filter: var(--lui-icon-shadow);
+}
+
+/* Matches a glyph label such as "?" beside it: drawn about cap height and as heavy as the font,
+   in a box one line tall, so the button is exactly as big as a text one. */
+.lui-btn--icon :slotted(svg) {
+  width: 0.9em;
+  height: 1lh;
+  stroke-width: 3;
 }
 
 .lui-btn--stacked :slotted(svg) {

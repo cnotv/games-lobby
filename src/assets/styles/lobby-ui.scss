@@ -22,6 +22,11 @@
     0 -1px 0 #111, 0 1px 0 #111, clamp(3px, 0.12em, 6px) clamp(3px, 0.16em, 7px) 0 #111;
   --lui-font: var(--font-playful);
 
+  // The same outline and drop as --lui-text-shadow, as a filter, for icons: an svg takes no
+  // text shadow, and a single drop-shadow made icons look unlike the text beside them.
+  --lui-icon-shadow: drop-shadow(1px 0 0 #111) drop-shadow(-1px 0 0 #111) drop-shadow(0 1px 0 #111)
+    drop-shadow(0 -1px 0 #111) drop-shadow(clamp(3px, 0.12em, 6px) clamp(3px, 0.16em, 7px) 0 #111);
+
   // The dark ink of that outline, for drawn strokes (arrows, sketches) that cannot take a
   // text shadow and carry the same black-under-white look with a wider stroke beneath.
   --lui-outline-color: #111;

@@ -20,12 +20,18 @@ type ConfigPayload = {
   instrument: RgInstrument
   customNotes?: RhythmNote[] | null
   customSongName?: string
+  /** A rendered song's chart is shared at its own tempo; this is the rate every player slows it to. */
+  customTempoRate?: number
+  /** The song itself, for a Strudel song every player plays live. */
+  customStrudelCode?: string | null
 }
 type StartPayload = {
   song: RgSong
   difficulty: RgDifficulty
   startAt: number
   customNotes?: RhythmNote[] | null
+  customTempoRate?: number
+  customStrudelCode?: string | null
 }
 type ScorePayload = RgScore
 
@@ -57,23 +63,45 @@ const makePeerPlayer = (
   miss: existing?.miss ?? 0
 })
 
+type RhythmGameStore = ReturnType<typeof useRhythmGameStore>
+
+/**
+ * Takes on the song the host has set up for the room.
+ * @param store - The peer's game store
+ * @param data - The host's room config
+ */
+export const applyConfigPayload = (store: RhythmGameStore, data: ConfigPayload): void => {
+  store.song = data.song ?? 'electric-pulse'
+  store.difficulty = data.difficulty ?? 'medium'
+  store.instrument = data.instrument ?? 'piano'
+  store.customNotes = data.customNotes ?? null
+  store.customSongName = data.customSongName ?? ''
+  store.customTempoRate = data.customTempoRate ?? 1
+  store.customStrudelCode = data.customStrudelCode ?? null
+}
+
+/**
+ * Takes on the song the host has just started, so every player plays the same chart at one tempo.
+ * @param store - The peer's game store
+ * @param data - The host's start message
+ */
+export const applyStartPayload = (store: RhythmGameStore, data: StartPayload): void => {
+  if (data.customNotes) store.customNotes = data.customNotes
+  store.customTempoRate = data.customTempoRate ?? 1
+  store.customStrudelCode = data.customStrudelCode ?? null
+}
+
 const bindGameData = (
   s: P2PSession,
   _localPeerId: Ref<string>,
   isHost: ComputedRef<boolean>,
-  store: ReturnType<typeof useRhythmGameStore>,
+  store: RhythmGameStore,
   onStartCallback: { current: ((payload: StartPayload) => void) | null }
 ): void => {
-  p2pOnData(s, CONFIG_CHANNEL, (data: ConfigPayload) => {
-    store.song = data.song ?? 'electric-pulse'
-    store.difficulty = data.difficulty ?? 'medium'
-    store.instrument = data.instrument ?? 'piano'
-    store.customNotes = data.customNotes ?? null
-    store.customSongName = data.customSongName ?? ''
-  })
+  p2pOnData(s, CONFIG_CHANNEL, (data: ConfigPayload) => applyConfigPayload(store, data))
 
   p2pOnData(s, START_CHANNEL, (data: StartPayload) => {
-    if (data.customNotes) store.customNotes = data.customNotes
+    applyStartPayload(store, data)
     store.phase = 'playing'
     onStartCallback.current?.(data)
   })
@@ -121,7 +149,9 @@ export const useRhythmGameSession = (options: SessionOptions) => {
           difficulty: store.difficulty,
           instrument: store.instrument,
           customNotes: store.customNotes,
-          customSongName: store.customSongName
+          customSongName: store.customSongName,
+          customTempoRate: store.customTempoRate,
+          customStrudelCode: store.customStrudelCode
         }
         p2pSendData(s, CONFIG_CHANNEL, config)
       }
@@ -142,7 +172,9 @@ export const useRhythmGameSession = (options: SessionOptions) => {
       song: store.song,
       difficulty: store.difficulty,
       startAt,
-      customNotes: store.customNotes
+      customNotes: store.customNotes,
+      customTempoRate: store.customTempoRate,
+      customStrudelCode: store.customStrudelCode
     }
     p2pSendData(session.value, START_CHANNEL, payload)
     store.phase = 'playing'

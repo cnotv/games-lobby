@@ -6,13 +6,9 @@ import {
   STRUDEL_SOUND_PREVIEW_LEAD_SECONDS,
   STRUDEL_SOUND_PREVIEW_NOTE,
   STRUDEL_SOUND_PREVIEW_SECONDS,
-  STRUDEL_MAX_SONG_CYCLES,
-  STRUDEL_SONG_RENDER_BUDGET_MS,
-  STRUDEL_SONG_RENDER_CHUNK_CYCLES,
-  STRUDEL_SONG_RENDER_MAX_CYCLES,
-  STRUDEL_SONG_RENDER_SAMPLE_RATE
+  STRUDEL_MAX_SONG_CYCLES
 } from './config'
-import { joinWavChunks } from './wavEncoding'
+import { createRenderQueue } from './renderQueue'
 import {
   downloadExportFile,
   readScheduledHaps,
@@ -30,6 +26,7 @@ import type {
   StrudelPlayback,
   StrudelPlaybackHooks,
   StrudelPlaybackPosition,
+  StrudelLiveSong,
   StrudelRenderResult,
   StrudelScheduledHap,
   StrudelUnknownCallable
@@ -647,65 +644,53 @@ export const renderStrudelCodeToWav = async (patternCode: string): Promise<Array
   return result.file
 }
 
-const renderWavChunks = async (
-  playback: StrudelPlayback,
-  patternCode: string,
-  options: StrudelExportOptions,
-  chunkStarts: number[],
-  deadline: number
-): Promise<ArrayBuffer[] | null> => {
-  const [startCycle, ...remainingStarts] = chunkStarts
-  if (startCycle === undefined) return []
-  if (Date.now() > deadline) return null
-  const chunk = await playback.renderToWavBytes(patternCode, {
-    ...options,
-    startCycle,
-    endCycle: Math.min(startCycle + STRUDEL_SONG_RENDER_CHUNK_CYCLES, options.endCycle)
-  })
-  if (!chunk.success || chunk.file === undefined) {
-    throw new Error(chunk.errorMessage ?? 'The code did not render.')
-  }
-  const rest = await renderWavChunks(playback, patternCode, options, remainingStarts, deadline)
-  return rest === null ? null : [chunk.file, ...rest]
-}
+const runSongWorkInTurn = createRenderQueue()
+
+// The engine keeps the tempo the last song set, so a song that sets none starts from Strudel's
+// own; a song that sets one still overrides it further down.
+const fromDefaultTempo = (songCode: string): string => `setcps(${DEFAULT_CPS})\n${songCode}`
 
 /**
- * Renders a whole song to its notes and, time allowing, to a recording, outside the editor's own
- * playback and without playing a sound. A song whose recording takes too long to render comes
- * back with its notes alone, so a game can play those instead.
- * @param patternCode - Strudel code that sets its own tempo
- * @returns the MIDI file, and the WAV file or null when it took too long
- * @throws {Error} when the code does not render
+ * Writes a whole song's notes to MIDI without playing a sound, so a game can chart it. It renders
+ * notes only, never audio, which takes a fraction of a second where a recording took minutes.
+ * @param songCode - Strudel code for the song
+ * @returns the MIDI file of one full play of the song, and the tempo the song set
+ * @throws {Error} when the code does not evaluate
  */
-export const renderStrudelCodeToSong = async (
-  patternCode: string
-): Promise<{ wav: ArrayBuffer | null; midi: ArrayBuffer }> => {
-  const deadline = Date.now() + STRUDEL_SONG_RENDER_BUDGET_MS
-  await prepareInstrumentsForCode(patternCode)
-  const playback = await loadSilentPlayback()
-  const measured = (await playback.measureRepetition(patternCode)) ?? STRUDEL_SONG_RENDER_MAX_CYCLES
-  const cycles = Math.min(measured, STRUDEL_SONG_RENDER_MAX_CYCLES)
-  const options = {
-    ...EXPORT_DEFAULT_OPTIONS,
-    sampleRate: STRUDEL_SONG_RENDER_SAMPLE_RATE,
-    endCycle: cycles
-  }
-  const midi = await playback.renderToMidiBytes(patternCode, { ...options, format: 'midi' })
-  if (!midi.success || midi.file === undefined) {
-    throw new Error(midi.errorMessage ?? 'The code did not render.')
-  }
-  // One offline context holding every note of a whole song runs out of memory, so it is
-  // rendered a few cycles at a time and joined.
-  const chunkStarts = Array.from(
-    { length: Math.ceil(cycles / STRUDEL_SONG_RENDER_CHUNK_CYCLES) },
-    (_, index) => index * STRUDEL_SONG_RENDER_CHUNK_CYCLES
-  )
-  // A recording that cannot be made is not fatal: the song's notes still play.
-  const chunks = await renderWavChunks(playback, patternCode, options, chunkStarts, deadline).catch(
-    () => null
-  )
-  return { wav: chunks === null ? null : joinWavChunks(chunks), midi: midi.file }
-}
+export const renderStrudelCodeToNotes = (
+  songCode: string
+): Promise<{ midi: ArrayBuffer; cyclesPerSecond: number }> =>
+  runSongWorkInTurn(async () => {
+    const patternCode = fromDefaultTempo(songCode)
+    await prepareInstrumentsForCode(patternCode)
+    const playback = await loadSilentPlayback()
+    const cycles = (await playback.measureRepetition(patternCode)) ?? STRUDEL_MAX_SONG_CYCLES
+    const midi = await playback.renderToMidiBytes(patternCode, {
+      ...EXPORT_DEFAULT_OPTIONS,
+      format: 'midi',
+      endCycle: cycles
+    })
+    if (!midi.success || midi.file === undefined) {
+      throw new Error(midi.errorMessage ?? 'The code did not render.')
+    }
+    return { midi: midi.file, cyclesPerSecond: playback.readPosition().cyclesPerSecond }
+  })
+
+/**
+ * Starts a song playing live, the way the editor's Play does, and reports how far in it is.
+ * @param songCode - Strudel code that sets its own tempo
+ * @returns where the song is, or null until it plays, and a function that stops it
+ * @throws {Error} when the code does not evaluate
+ */
+export const playStrudelSong = (songCode: string): Promise<StrudelLiveSong> =>
+  runSongWorkInTurn(async () => {
+    const patternCode = fromDefaultTempo(songCode)
+    await prepareInstrumentsForCode(patternCode)
+    const playback = await loadSilentPlayback()
+    const result = await playback.evaluateCode(patternCode)
+    if (!result.success) throw new Error(result.errorMessage ?? 'The song did not play.')
+    return { readPosition: playback.readPosition, stop: playback.stopPlayback }
+  })
 
 /**
  * Plays a rendered WAV once on the page's audio and hands back a way to stop it. One buffer,
