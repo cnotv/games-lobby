@@ -60,4 +60,26 @@ describe('RhythmGameSongsTab', () => {
     // Assert
     expect(wrapper.emitted('remove')).toEqual([['a']])
   })
+
+  it('fills the form from a song clicked on its name and updates it', async () => {
+    // Arrange
+    const song = { id: 'a', label: 'Night drive', code: 's("bass")' }
+    const wrapper = mount(RhythmGameSongsTab, { props: { songs: [song] } })
+
+    // Act
+    await wrapper.find('.rgs__name').trigger('click')
+
+    // Assert
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('s("bass")')
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('Night drive')
+    expect(findButton(wrapper, 'Update song')).not.toBeUndefined()
+
+    await wrapper.find('input').setValue('Bass line')
+    await wrapper.find('textarea').setValue('s("bass")')
+    await findButton(wrapper, 'Update song')?.trigger('click')
+
+    expect(wrapper.emitted('edit')).toEqual([[{ ...song, label: 'Bass line', code: 's("bass")' }]])
+    expect((wrapper.find('textarea').element as HTMLTextAreaElement).value).toBe('')
+    expect((wrapper.find('input').element as HTMLInputElement).value).toBe('')
+  })
 })

@@ -8,7 +8,9 @@ defineProps<{
 
 <template>
   <div class="lui-row" :class="{ 'lui-row--inline': inline }" data-lui-row>
-    <span v-if="label" class="lui-row__label">{{ label }}</span>
+    <slot name="label">
+      <span v-if="label" class="lui-row__label">{{ label }}</span>
+    </slot>
     <div class="lui-row__control">
       <slot />
     </div>

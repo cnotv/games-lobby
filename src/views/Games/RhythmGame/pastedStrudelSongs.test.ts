@@ -5,7 +5,8 @@ import {
   findStrudelTrackIndex,
   parseStrudelInstrumentFlag,
   readPastedSongs,
-  removePastedSong
+  removePastedSong,
+  updatePastedSong
 } from './pastedStrudelSongs'
 
 describe('parseStrudelInstrumentFlag', () => {
@@ -139,5 +140,46 @@ describe('removePastedSong', () => {
 
     // Assert
     expect(nextSongs).toEqual([songs[1]])
+  })
+})
+
+describe('updatePastedSong', () => {
+  it('replaces the name and code of the song with the id, keeping its position', () => {
+    // Arrange
+    const songs = [
+      { id: 'a', label: 'A', code: 's("bd")' },
+      { id: 'b', label: 'B', code: 's("hh")' }
+    ]
+    const updated = { id: 'b', label: 'Bass', code: 's("bass")' }
+
+    // Act
+    const nextSongs = updatePastedSong(songs, updated)
+
+    // Assert
+    expect(nextSongs).toEqual([songs[0], updated])
+  })
+
+  it('keeps the old name when the new one is blank', () => {
+    // Arrange
+    const songs = [{ id: 'a', label: 'A', code: 's("bd")' }]
+    const updated = { id: 'a', label: '   ', code: 's("hh")' }
+
+    // Act
+    const nextSongs = updatePastedSong(songs, updated)
+
+    // Assert
+    expect(nextSongs).toEqual([{ id: 'a', label: 'A', code: 's("hh")' }])
+  })
+
+  it('returns the same list when the id is absent', () => {
+    // Arrange
+    const songs = [{ id: 'a', label: 'A', code: 's("bd")' }]
+    const updated = { id: 'missing', label: 'X', code: 's("hh")' }
+
+    // Act
+    const nextSongs = updatePastedSong(songs, updated)
+
+    // Assert
+    expect(nextSongs).toBe(songs)
   })
 })

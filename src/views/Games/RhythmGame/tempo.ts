@@ -24,3 +24,17 @@ export const slowScheduledNotes = (notes: ScheduledNote[], tempoRate: number): S
     duration: note.duration / tempoRate,
     freq: note.freq * tempoRate
   }))
+
+/**
+ * Slows a live Strudel song's notes the way its setcps does: later and longer, but at the same
+ * pitch, so the chart stays in tune with the song playing around it.
+ * @param notes - The notes at their own tempo
+ * @param tempoRate - Share of full speed, 1 for as written, below 1 for slower
+ * @returns The notes at the new tempo, unchanged in pitch
+ */
+export const slowLiveSongNotes = (notes: ScheduledNote[], tempoRate: number): ScheduledNote[] =>
+  notes.map((note) => ({
+    ...note,
+    time: note.time / tempoRate,
+    duration: note.duration / tempoRate
+  }))

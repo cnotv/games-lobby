@@ -10,11 +10,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   add: [label: string, code: string]
+  edit: [song: StrudelExample]
   remove: [songId: string]
 }>()
 
 const draftName = ref('')
 const draftCode = ref('')
+const editingId = ref<string | null>(null)
 
 const songRows = computed(() =>
   props.songs.map((song) => ({
@@ -23,9 +25,29 @@ const songRows = computed(() =>
   }))
 )
 
+const startEdit = (song: StrudelExample): void => {
+  editingId.value = song.id
+  draftName.value = song.label
+  draftCode.value = song.code
+}
+
+const cancelEdit = (): void => {
+  editingId.value = null
+  draftName.value = ''
+  draftCode.value = ''
+}
+
 const addSong = (): void => {
   const code = draftCode.value.trim()
   if (code.length === 0) return
+  if (editingId.value !== null) {
+    const song = props.songs.find((candidate) => candidate.id === editingId.value)
+    if (song !== undefined) {
+      emit('edit', { ...song, label: draftName.value, code })
+    }
+    cancelEdit()
+    return
+  }
   emit('add', draftName.value, code)
   draftName.value = ''
   draftCode.value = ''
@@ -55,19 +77,32 @@ $: note("c2 eb2 g2").s("bass")'
     />
 
     <div class="rgs__actions">
+      <LobbyUIButton v-if="editingId !== null" variant="ghost" size="sm" @click="cancelEdit">
+        Cancel
+      </LobbyUIButton>
       <LobbyUIButton
         variant="cta"
         size="sm"
         :disabled="draftCode.trim().length === 0"
         @click="addSong"
       >
-        Add song
+        {{ editingId !== null ? 'Update song' : 'Add song' }}
       </LobbyUIButton>
     </div>
 
     <p v-if="songRows.length === 0" class="rgs__empty">No songs pasted yet.</p>
     <template v-else>
-      <LobbyUIRow v-for="song in songRows" :key="song.id" :label="song.label" inline>
+      <LobbyUIRow v-for="song in songRows" :key="song.id" inline>
+        <template #label>
+          <button
+            type="button"
+            class="rgs__name"
+            :aria-label="`Edit ${song.label}`"
+            @click="startEdit(song)"
+          >
+            {{ song.label }}
+          </button>
+        </template>
         <span class="rgs__instrument">Instrument: {{ song.instrument ?? 'auto' }}</span>
         <LobbyUIButton
           variant="ghost"
@@ -132,6 +167,29 @@ $: note("c2 eb2 g2").s("bass")'
 .rgs__actions {
   display: flex;
   justify-content: flex-end;
+  gap: var(--spacing-2);
+}
+
+.rgs__name {
+  appearance: none;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--lui-text-color);
+  cursor: pointer;
+  font-family: var(--lui-font);
+  font-size: var(--lui-text-small);
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-shadow: var(--lui-text-shadow);
+  text-transform: uppercase;
+}
+
+.rgs__name:hover,
+.rgs__name:focus-visible {
+  text-decoration: underline;
+  outline: none;
 }
 
 .rgs__instrument {

@@ -70,6 +70,7 @@ const builtInStrudelSongs = ref<StrudelExample[]>([])
 const {
   pastedSongs,
   addSong: addPastedSong,
+  updateSong: updatePastedSong,
   removeSong: removePastedSong
 } = usePastedStrudelSongs()
 const strudelSongs = computed(() => [...builtInStrudelSongs.value, ...pastedSongs.value])
@@ -316,6 +317,11 @@ const handleAddPastedSong = (label: string, code: string): void => {
   void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
 }
 
+const handleEditPastedSong = (song: StrudelExample): void => {
+  updatePastedSong(song)
+  if (selectedStrudelId.value === song.id) void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
+}
+
 const handleRemovePastedSong = (songId: string): void => {
   const wasSelected = selectedStrudelId.value === songId
   removePastedSong(songId)
@@ -355,6 +361,7 @@ const handleRemovePastedSong = (songId: string): void => {
       <RhythmGameSongsTab
         :songs="pastedSongs"
         @add="handleAddPastedSong"
+        @edit="handleEditPastedSong"
         @remove="handleRemovePastedSong"
       />
     </template>

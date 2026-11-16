@@ -97,6 +97,30 @@ export const addPastedSong = (songs: StrudelExample[], song: StrudelExample): St
 ]
 
 /**
+ * Replaces a pasted song's name and code, leaving its id and position. An empty name keeps the
+ * old one, and nothing changes when the id is absent, so a stale edit cannot rewrite another song.
+ * @param songs - The pasted songs so far
+ * @param song - The song's new name and code, keeping its id
+ * @returns The updated songs, or the same list when the id is absent
+ */
+export const updatePastedSong = (
+  songs: StrudelExample[],
+  song: StrudelExample
+): StrudelExample[] => {
+  if (!songs.some((existingSong) => existingSong.id === song.id)) return songs
+  const trimmedLabel = song.label.trim()
+  return songs.map((existingSong) =>
+    existingSong.id === song.id
+      ? {
+          ...existingSong,
+          label: trimmedLabel.length > 0 ? trimmedLabel : existingSong.label,
+          code: song.code
+        }
+      : existingSong
+  )
+}
+
+/**
  * Removes the pasted song with an id.
  * @param songs - The pasted songs so far
  * @param songId - The id of the song to remove
