@@ -35,8 +35,9 @@ const addSong = (): void => {
 <template>
   <div class="rgs">
     <p class="rgs__hint">
-      Paste a Strudel pattern. A <code>// instrument: bass</code> comment charts that stem, and
-      names piano, bass or guitar also set the hit sound.
+      Paste a Strudel pattern. A <code>// instrument: bass</code> comment charts that instrument,
+      and names piano, bass or guitar also set the hit sound. Without one, the busiest instrument
+      charts.
     </p>
 
     <LobbyUIRow label="Name" inline>
