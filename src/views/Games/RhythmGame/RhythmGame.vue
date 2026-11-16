@@ -231,6 +231,7 @@ onMounted(() => {
       @play-again="handleRestart"
       @midi-parsed="handleMidiParsed"
       @song-picked="handleSongPicked"
+      @instrument-picked="store.instrument = $event"
       @update:difficulty="store.difficulty = $event"
     />
 

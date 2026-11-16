@@ -22,6 +22,7 @@ export const COMBO_MULTIPLIERS = [2, 4, 8] as const
 export const SCORE_PERFECT = 300
 export const SCORE_GOOD = 100
 export const MATCHMAKER_ROOM = 'rhythm-game-matchmaker'
+export const PASTED_STRUDEL_SONGS_STORAGE_KEY = 'rhythm-game-pasted-strudel-songs'
 
 export const LANE_COLORS = ['#00e5ff', '#ff4081', '#ffd740', '#69ff47'] as const
 export const LANE_KEYS = ['D', 'F', 'J', 'K'] as const
@@ -64,7 +65,8 @@ export const CONTROLS_CONFIG: ControlsMapperGameConfig = {
 export type RgDifficulty = 'easy' | 'medium' | 'hard'
 export type RgSong = 'electric-pulse' | 'neon-chase' | 'grid-storm' | 'custom'
 export type RgLane = 0 | 1 | 2 | 3
-export type RgInstrument = 'piano' | 'bass' | 'guitar'
+export const GAME_INSTRUMENTS = ['piano', 'bass', 'guitar'] as const
+export type RgInstrument = (typeof GAME_INSTRUMENTS)[number]
 
 type InstrumentPreset = {
   waveType: 'sine' | 'square' | 'sawtooth' | 'triangle'

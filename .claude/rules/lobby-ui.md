@@ -47,6 +47,10 @@ hand-drawn tokens (`--lui-radius-sketch*`); dividers use the `--lui-squiggle*` i
   only the set matching the device last used, tracked by `src/composables/useInputDevice.ts`
   and fed by every controls callback through `reportInputSource`. Never render both at once;
   omit the prop for a device with no binding and the pill hides itself.
+- **Game tabs**: a game that needs a third tab next to Game and Controls passes
+  `extraTabLabel` and fills the `extra` slot on `LobbyUIWizard`; its content uses the kit like
+  any other over-scene UI. `RhythmGameSongsTab.vue` is the reference for a tab that accepts
+  pasted code.
 - **Showcase**: the LobbyUI showcase lives in generative-art
   ([`LobbyUIShowcase.vue`](https://github.com/cnotv/generative-art/blob/main/src/views/Tests/LobbyUIShowcase/LobbyUIShowcase.vue)),
   which keeps its own copy of the kit. A new `LobbyUI*` component or visual variant made here

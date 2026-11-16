@@ -18,7 +18,7 @@ describe('the song a host shares', () => {
     const sharedSong = {
       song: 'custom' as const,
       difficulty: 'easy' as const,
-      instrument: 'piano' as const,
+      instrument: 'guitar' as const,
       startAt: 0,
       customNotes: chart,
       customTempoRate: 0.75,
@@ -29,6 +29,7 @@ describe('the song a host shares', () => {
     apply(store, sharedSong)
 
     // Assert
+    expect(store.instrument).toBe('guitar')
     expect(store.customNotes).toEqual(chart)
     expect(store.customTempoRate).toBe(0.75)
     expect(store.customStrudelCode).toBe('s("bd")\nsetcps(0.375)')

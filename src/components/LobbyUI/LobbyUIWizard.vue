@@ -23,6 +23,8 @@ const props = withDefaults(
     matchmakerRoom: string
     configFields: LobbyConfigField[]
     controls?: ControlsMapperGameConfig
+    /** Adds a third tab whose content comes from the `extra` slot, when a game needs one. */
+    extraTabLabel?: string
     showResults?: boolean
     canStart?: boolean
   }>(),
@@ -44,15 +46,23 @@ const mapperStore = props.controls
   ? useControlsMapperStore(props.controls.gameId, props.controls.defaultMapping)
   : null
 
-type WizardTab = 'game' | 'controls'
+type WizardTab = 'game' | 'controls' | 'extra'
 const wizardTab = ref<WizardTab>('game')
-const WIZARD_TAB_OPTIONS = [
+const wizardTabOptions = computed(() => [
   { value: 'game', label: 'Game' },
-  { value: 'controls', label: 'Controls' }
-]
+  ...(props.controls ? [{ value: 'controls', label: 'Controls' }] : []),
+  ...(props.extraTabLabel ? [{ value: 'extra', label: props.extraTabLabel }] : [])
+])
 const setWizardTab = (value: string) => {
   wizardTab.value = value as WizardTab
 }
+
+watch(
+  () => props.extraTabLabel,
+  (extraTabLabel) => {
+    if (extraTabLabel === undefined && wizardTab.value === 'extra') wizardTab.value = 'game'
+  }
+)
 
 const route = useRoute()
 const fromLobby = computed(() => !!route.query.game)
@@ -120,10 +130,10 @@ onMounted(() => {
 
   <section ref="wizardRoot" class="lui-wizard">
     <div v-if="!showResults" class="lui-wizard__body">
-      <div v-if="controls" class="lui-wizard__tabs" data-lui-row>
+      <div v-if="controls || extraTabLabel" class="lui-wizard__tabs" data-lui-row>
         <LobbyUIOptionToggle
           :model-value="wizardTab"
-          :options="WIZARD_TAB_OPTIONS"
+          :options="wizardTabOptions"
           @update:model-value="setWizardTab"
         />
       </div>
@@ -134,6 +144,8 @@ onMounted(() => {
         :actions="controls.actions"
         :default-mapping="controls.defaultMapping"
       />
+
+      <slot v-else-if="wizardTab === 'extra'" name="extra" />
 
       <LobbyUIWizardForm
         v-else

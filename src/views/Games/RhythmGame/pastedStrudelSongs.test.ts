@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   addPastedSong,
+  findGameInstrumentName,
   findStrudelTrackIndex,
-  isRgInstrumentName,
   parseStrudelInstrumentFlag,
   readPastedSongs,
   removePastedSong
@@ -31,22 +31,24 @@ describe('parseStrudelInstrumentFlag', () => {
   })
 })
 
-describe('isRgInstrumentName', () => {
+describe('findGameInstrumentName', () => {
   it.each([
-    ['piano', true],
-    ['bass', true],
-    ['guitar', true],
-    ['sawtooth', false],
-    ['Piano', false]
-  ])('reads %s as a game instrument: %s', (name, expected) => {
+    ['piano', 'piano'],
+    ['bass', 'bass'],
+    ['Piano', 'piano'],
+    ['fuzzbass', 'bass'],
+    ['gm_overdriven_guitar', 'guitar'],
+    ['sawtooth', null],
+    [null, null]
+  ])('reads %s as the game instrument %s', (name, expected) => {
     // Arrange
     const instrumentName = name
 
     // Act
-    const isGameInstrument = isRgInstrumentName(instrumentName)
+    const gameInstrument = findGameInstrumentName(instrumentName)
 
     // Assert
-    expect(isGameInstrument).toBe(expected)
+    expect(gameInstrument).toBe(expected)
   })
 })
 
