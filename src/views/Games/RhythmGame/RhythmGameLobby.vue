@@ -16,9 +16,16 @@ import {
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
 import { buildLiveSongCode, buildStrudelChart, listStrudelTracks } from './strudelSong'
 import { strudelSongNotes } from './strudelNotesCache'
+import RhythmGameSongsTab from './RhythmGameSongsTab.vue'
+import { usePastedStrudelSongs } from './usePastedStrudelSongs'
+import {
+  findGameInstrumentName,
+  findStrudelTrackIndex,
+  parseStrudelInstrumentFlag
+} from './pastedStrudelSongs'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
-import type { RgDifficulty, RgSong, RhythmNote } from './config'
+import type { RgDifficulty, RgInstrument, RgSong, RhythmNote } from './config'
 
 const props = defineProps<{
   playerName: string
@@ -50,6 +57,7 @@ const emit = defineEmits<{
     tempoRate?: number
   ]
   songPicked: [song: RgSong]
+  instrumentPicked: [instrument: RgInstrument]
   'update:difficulty': [difficulty: RgDifficulty]
 }>()
 
@@ -58,7 +66,14 @@ const library = ref<MidiLibraryEntry[]>([])
 const selectedMidiId = ref<string | null>(null)
 const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
-const strudelSongs = ref<StrudelExample[]>([])
+const builtInStrudelSongs = ref<StrudelExample[]>([])
+const {
+  pastedSongs,
+  addSong: addPastedSong,
+  updateSong: updatePastedSong,
+  removeSong: removePastedSong
+} = usePastedStrudelSongs()
+const strudelSongs = computed(() => [...builtInStrudelSongs.value, ...pastedSongs.value])
 const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{
   code: string
@@ -77,7 +92,7 @@ const loadLibrary = async (): Promise<void> => {
 // The song list is large, so it loads with the lobby rather than with the game.
 const loadStrudelSongs = async (): Promise<void> => {
   const { ELECTRO_TUNES } = await import('@/views/Tools/StrudelEditor/config')
-  strudelSongs.value = ELECTRO_TUNES
+  builtInStrudelSongs.value = ELECTRO_TUNES
 }
 
 const lobbyClosed = { value: false }
@@ -202,8 +217,11 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
     if (!isStillPicked()) return
     const tracks = listStrudelTracks(midi)
     if (tracks.length === 0) throw new Error('This song has no pitched notes to play')
+    const instrumentFlag = parseStrudelInstrumentFlag(song.code)
     strudelSong.value = { code: song.code, cyclesPerSecond, midi, tracks }
-    selectedTrackIndex.value = tracks[0].index
+    selectedTrackIndex.value = findStrudelTrackIndex(tracks, instrumentFlag) ?? tracks[0].index
+    const gameInstrument = findGameInstrumentName(instrumentFlag)
+    if (gameInstrument !== null) emit('instrumentPicked', gameInstrument)
     emitStrudelSong(props.difficulty)
   } catch {
     if (!isStillPicked()) return
@@ -293,6 +311,27 @@ const handleDelete = async (): Promise<void> => {
   emit('songPicked', SONGS[0].id)
   await loadLibrary()
 }
+
+const handleAddPastedSong = (label: string, code: string): void => {
+  const song = addPastedSong(label, code)
+  void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
+}
+
+const handleEditPastedSong = (song: StrudelExample): void => {
+  updatePastedSong(song)
+  if (selectedStrudelId.value === song.id) void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
+}
+
+const handleRemovePastedSong = (songId: string): void => {
+  const wasSelected = selectedStrudelId.value === songId
+  removePastedSong(songId)
+  if (!wasSelected) return
+  selectedStrudelId.value = null
+  renderingStrudelId.value = null
+  strudelSong.value = null
+  selectedTrackIndex.value = 0
+  emit('songPicked', SONGS[0].id)
+}
 </script>
 
 <template>
@@ -305,6 +344,7 @@ const handleDelete = async (): Promise<void> => {
     :matchmaker-room="MATCHMAKER_ROOM"
     :config-fields="configFields"
     :controls="CONTROLS_CONFIG"
+    :extra-tab-label="isHost ? 'Songs' : undefined"
     :show-results="showResults"
     :can-start="renderingStrudelId === null"
     @update:player-name="emit('update:playerName', $event)"
@@ -315,7 +355,17 @@ const handleDelete = async (): Promise<void> => {
     @match-found="emit('matchFound', $event)"
     @leave-room="emit('leaveRoom')"
     @play-again="emit('playAgain')"
+    @instrument-picked="emit('instrumentPicked', $event)"
   >
+    <template #extra>
+      <RhythmGameSongsTab
+        :songs="pastedSongs"
+        @add="handleAddPastedSong"
+        @edit="handleEditPastedSong"
+        @remove="handleRemovePastedSong"
+      />
+    </template>
+
     <template #profile-extra>
       <LobbyUIRow v-if="isHost" label="Your MIDI" inline>
         <LobbyUIButton variant="ghost" size="sm" @click="fileInput?.click()">Upload</LobbyUIButton>

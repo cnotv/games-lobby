@@ -142,3 +142,11 @@ the last note, when the round ends.
 Commit the `.strudel` source next to the file it renders, so it can be changed and rendered
 again. A WAV is about 11 MB a minute at 48 kHz stereo: anything longer than a short effect or
 loop goes in as OGG or MP3 (`ffmpeg -i in.wav -q:a 4 out.ogg`), and the WAV stays out of git.
+
+## 5. Load it from a game lobby
+
+When a loading screen lets a player paste a Strudel song, build the tab from the LobbyUI kit
+rather than the app theme: see `.claude/rules/lobby-ui.md` and the `extraTabLabel`/`extra`
+slot on `LobbyUIWizard`. The Rhythm Songs tab (`RhythmGameSongsTab.vue`) is the reference. A
+`// instrument: <name>` comment chooses which rendered stem becomes the chart, and names
+piano, bass or guitar also set the hit sound.

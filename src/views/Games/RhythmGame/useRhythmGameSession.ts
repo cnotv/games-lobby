@@ -28,6 +28,7 @@ type ConfigPayload = {
 type StartPayload = {
   song: RgSong
   difficulty: RgDifficulty
+  instrument: RgInstrument
   startAt: number
   customNotes?: RhythmNote[] | null
   customTempoRate?: number
@@ -86,6 +87,7 @@ export const applyConfigPayload = (store: RhythmGameStore, data: ConfigPayload):
  * @param data - The host's start message
  */
 export const applyStartPayload = (store: RhythmGameStore, data: StartPayload): void => {
+  store.instrument = data.instrument ?? 'piano'
   if (data.customNotes) store.customNotes = data.customNotes
   store.customTempoRate = data.customTempoRate ?? 1
   store.customStrudelCode = data.customStrudelCode ?? null
@@ -171,6 +173,7 @@ export const useRhythmGameSession = (options: SessionOptions) => {
     const payload: StartPayload = {
       song: store.song,
       difficulty: store.difficulty,
+      instrument: store.instrument,
       startAt,
       customNotes: store.customNotes,
       customTempoRate: store.customTempoRate,

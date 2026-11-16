@@ -18,7 +18,7 @@ import {
   type RgInstrument
 } from './config'
 import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
-import { slowChartNotes, slowScheduledNotes } from './tempo'
+import { slowChartNotes, slowLiveSongNotes, slowScheduledNotes } from './tempo'
 import { createRhythmAudio } from './rhythmAudio'
 import {
   buildScheduledNotes,
@@ -43,7 +43,7 @@ type DrawContext = {
   laneFlashes: LaneFlash[]
 }
 
-type GameDeps = {
+export type GameDeps = {
   canvas: Ref<HTMLCanvasElement | null>
   song: RgSong
   difficulty: RgDifficulty
@@ -63,18 +63,29 @@ const resolveNotes = async (deps: GameDeps): Promise<RhythmNote[]> =>
     ? deps.customNotes.map((n) => ({ ...n }))
     : fetchSongNotes(deps.song, deps.difficulty)
 
-const buildSongNotes = (
+/**
+ * The chart the player sees and the notes the scheduler plays. A live Strudel song still needs its
+ * chart scheduled through the chosen instrument: the live mix alone leaves the hits silent.
+ * @param chart - The song's chart
+ * @param deps - The round's song, instrument and backing
+ * @param tempoRate - Share of full speed the round plays at
+ * @returns The slowed chart and the notes to schedule
+ */
+export const buildSongNotes = (
   chart: RhythmNote[],
   deps: GameDeps,
   tempoRate: number
 ): { chart: RhythmNote[]; scheduled: ScheduledNote[] } => {
-  const gameNotes = deps.customStrudelCode ? [] : buildScheduledNotes(chart, deps.instrument)
+  const gameNotes = buildScheduledNotes(chart, deps.instrument)
   const scheduled = deps.backgroundNotes?.length
     ? [...gameNotes, ...deps.backgroundNotes]
     : gameNotes
   return {
     chart: slowChartNotes(chart, tempoRate),
-    scheduled: slowScheduledNotes(scheduled, tempoRate)
+    // A live Strudel song slows by setcps, which keeps pitch, so its chart notes keep theirs too.
+    scheduled: deps.customStrudelCode
+      ? slowLiveSongNotes(scheduled, tempoRate)
+      : slowScheduledNotes(scheduled, tempoRate)
   }
 }
 

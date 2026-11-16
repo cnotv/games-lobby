@@ -60,4 +60,19 @@ describe('createStrudelNotesCache', () => {
     await expect(cache.notesFor('first', 'a')).rejects.toThrow('offline')
     await expect(cache.notesFor('first', 'a')).resolves.toEqual(notes('a'))
   })
+
+  it('writes a song again once its notes are forgotten, so an edit is heard', async () => {
+    // Arrange
+    const render = vi.fn(async (code: string) => notes(code))
+    const cache = createStrudelNotesCache(render)
+    await cache.notesFor('first', 'a')
+
+    // Act
+    cache.forgetSong('first')
+    await cache.notesFor('first', 'abc')
+
+    // Assert
+    expect(render).toHaveBeenCalledTimes(2)
+    expect(render).toHaveBeenLastCalledWith('abc')
+  })
 })

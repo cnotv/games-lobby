@@ -10,6 +10,7 @@ export const createStrudelNotesCache = (
   render: (songCode: string) => Promise<SongNotes>
 ): {
   notesFor: (songId: string, songCode: string) => Promise<SongNotes>
+  forgetSong: (songId: string) => void
   prefetch: (songs: { id: string; code: string }[], shouldStop: () => boolean) => Promise<void>
 } => {
   const written = new Map<string, Promise<SongNotes>>()
@@ -26,6 +27,14 @@ export const createStrudelNotesCache = (
     return pending
   }
 
+  /**
+   * Drops a song's written notes, so editing its code re-renders it instead of playing the old one.
+   * @param songId - The song whose notes to forget
+   */
+  const forgetSong = (songId: string): void => {
+    written.delete(songId)
+  }
+
   // One song at a time, so a song the player picks waits for at most one other.
   const prefetch = (songs: { id: string; code: string }[], shouldStop: () => boolean) =>
     songs.reduce<Promise<void>>(async (previous, song) => {
@@ -34,7 +43,7 @@ export const createStrudelNotesCache = (
       await notesFor(song.id, song.code).catch(() => undefined)
     }, Promise.resolve())
 
-  return { notesFor, prefetch }
+  return { notesFor, forgetSong, prefetch }
 }
 
 /** The page's one cache, so notes written in the lobby are still there after a round. */
