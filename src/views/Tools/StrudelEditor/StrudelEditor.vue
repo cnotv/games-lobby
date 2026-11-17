@@ -580,11 +580,12 @@ onBeforeUnmount(() => {
 <style scoped>
 /*
  * html and body never scroll in this app (src/style.css, for the full-screen 3D views), so
- * the view fills the viewport and each column scrolls on its own.
+ * the view fills the viewport and each column scrolls on its own. A host that embeds the
+ * editor in a smaller box (a dialog) sets --strudel-editor-height on any ancestor.
  */
 .strudel-editor {
   box-sizing: border-box;
-  height: 100dvh;
+  height: var(--strudel-editor-height, 100dvh);
   padding-inline: var(--spacing-4);
   padding-bottom: var(--spacing-4);
   display: grid;

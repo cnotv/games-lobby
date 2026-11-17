@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { LobbyUIButton, LobbyUINameInput, LobbyUIRow } from '@/components/LobbyUI'
+import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
 import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 import { parseStrudelInstrumentFlag } from './pastedStrudelSongs'
 
@@ -17,6 +18,7 @@ const emit = defineEmits<{
 const draftName = ref('')
 const draftCode = ref('')
 const editingId = ref<string | null>(null)
+const editorOpen = ref(false)
 
 const songRows = computed(() =>
   props.songs.map((song) => ({
@@ -52,6 +54,19 @@ const addSong = (): void => {
   draftName.value = ''
   draftCode.value = ''
 }
+
+const openEditor = (): void => {
+  editorOpen.value = true
+}
+
+const closeEditor = (): void => {
+  editorOpen.value = false
+}
+
+const handleEditorAdd = (label: string, code: string): void => {
+  emit('add', label, code)
+  editorOpen.value = false
+}
 </script>
 
 <template>
@@ -80,6 +95,7 @@ $: note("c2 eb2 g2").s("bass")'
       <LobbyUIButton v-if="editingId !== null" variant="ghost" size="sm" @click="cancelEdit">
         Cancel
       </LobbyUIButton>
+      <LobbyUIButton variant="ghost" size="sm" @click="openEditor"> Editor </LobbyUIButton>
       <LobbyUIButton
         variant="cta"
         size="sm"
@@ -114,6 +130,14 @@ $: note("c2 eb2 g2").s("bass")'
         </LobbyUIButton>
       </LobbyUIRow>
     </template>
+
+    <RhythmGameSongEditorDialog
+      v-if="editorOpen"
+      :initial-name="draftName"
+      :initial-code="draftCode"
+      @close="closeEditor"
+      @add="handleEditorAdd"
+    />
   </div>
 </template>
 
@@ -170,6 +194,14 @@ $: note("c2 eb2 g2").s("bass")'
   gap: var(--spacing-2);
 }
 
+.rgs__instrument {
+  color: var(--lui-text-color);
+  font-family: var(--lui-font);
+  font-size: var(--lui-text-small);
+  text-shadow: var(--lui-text-shadow);
+  text-transform: uppercase;
+}
+
 .rgs__name {
   appearance: none;
   background: none;
@@ -190,13 +222,5 @@ $: note("c2 eb2 g2").s("bass")'
 .rgs__name:focus-visible {
   text-decoration: underline;
   outline: none;
-}
-
-.rgs__instrument {
-  color: var(--lui-text-color);
-  font-family: var(--lui-font);
-  font-size: var(--lui-text-small);
-  text-shadow: var(--lui-text-shadow);
-  text-transform: uppercase;
 }
 </style>
