@@ -66,14 +66,12 @@ const library = ref<MidiLibraryEntry[]>([])
 const selectedMidiId = ref<string | null>(null)
 const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
-const builtInStrudelSongs = ref<StrudelExample[]>([])
 const {
   pastedSongs,
   addSong: addPastedSong,
   updateSong: updatePastedSong,
   removeSong: removePastedSong
 } = usePastedStrudelSongs()
-const strudelSongs = computed(() => [...builtInStrudelSongs.value, ...pastedSongs.value])
 const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{
   code: string
@@ -89,25 +87,20 @@ const loadLibrary = async (): Promise<void> => {
   library.value = await midiStorageList()
 }
 
-// The song list is large, so it loads with the lobby rather than with the game.
-const loadStrudelSongs = async (): Promise<void> => {
-  const { ELECTRO_TUNES } = await import('@/views/Tools/StrudelEditor/config')
-  builtInStrudelSongs.value = ELECTRO_TUNES
-}
-
 const lobbyClosed = { value: false }
 const ACTIVATION_EVENTS = ['pointerdown', 'keydown'] as const
 
-// Writing every song's notes ahead makes a pick instant, and stops when the lobby closes so it
-// never competes with a round's song for the engine. It waits for the player's first click or key:
-// the engine cannot start audio before one, and would wait for it with every pick queued behind.
+// Writing each pasted song's notes ahead makes a pick instant, and stops when the lobby closes so
+// it never competes with a round's song for the engine. It waits for the player's first click or
+// key: the engine cannot start audio before one, and would wait for it with every pick queued
+// behind.
 const writeSongsAhead = (): void => {
   ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
-  void strudelSongNotes.prefetch(strudelSongs.value, () => lobbyClosed.value)
+  void strudelSongNotes.prefetch(pastedSongs.value, () => lobbyClosed.value)
 }
 
 onMounted(async () => {
-  await Promise.all([loadLibrary(), loadStrudelSongs()])
+  await loadLibrary()
   if (lobbyClosed.value) return
   if (navigator.userActivation?.hasBeenActive) writeSongsAhead()
   else ACTIVATION_EVENTS.forEach((name) => window.addEventListener(name, writeSongsAhead))
@@ -133,7 +126,7 @@ const songField = computed(
         : `${STRUDEL_SONG_PREFIX}${selectedStrudelId.value}`,
     options: [
       ...SONGS.map((song) => ({ value: song.id, label: `${song.label} (${song.bpm} BPM)` })),
-      ...strudelSongs.value.map((song) => ({
+      ...pastedSongs.value.map((song) => ({
         value: `${STRUDEL_SONG_PREFIX}${song.id}`,
         label: song.label
       })),
@@ -190,7 +183,7 @@ const resolveTrackLabel = (midiId: string, trackIndex: number): string => {
 }
 
 const emitStrudelSong = (difficulty: RgDifficulty): void => {
-  const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
+  const song = pastedSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
   if (song === undefined || strudelSong.value === null) return
   const { code, cyclesPerSecond, midi } = strudelSong.value
   const tempoRate = DIFFICULTY_TEMPO[difficulty]
@@ -205,7 +198,7 @@ const emitStrudelSong = (difficulty: RgDifficulty): void => {
 }
 
 const pickStrudelSong = async (strudelId: string): Promise<void> => {
-  const song = strudelSongs.value.find((candidate) => candidate.id === strudelId)
+  const song = pastedSongs.value.find((candidate) => candidate.id === strudelId)
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
