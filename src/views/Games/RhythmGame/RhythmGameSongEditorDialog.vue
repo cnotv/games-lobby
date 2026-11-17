@@ -1,20 +1,15 @@
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
+import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { LobbyUIButton, LobbyUIFocusHint } from '@/components/LobbyUI'
 import { useDialogFocusTrap } from '@/composables/useDialogFocusTrap'
 import { readStorage, writeStorage } from '@/utils/storage'
 import {
-  ELECTRO_TUNES,
-  STRUDEL_SAVED_CODE_STORAGE_KEY,
-  STRUDEL_SAVED_PATTERNS_STORAGE_KEY
+  DEFAULT_STRUDEL_EXAMPLE_ID,
+  STRUDEL_EXAMPLES,
+  STRUDEL_SAVED_CODE_STORAGE_KEY
 } from '@/views/Tools/StrudelEditor/config'
-import {
-  readSavedPatterns,
-  toSavedPatternExamples
-} from '@/views/Tools/StrudelEditor/savedPatterns'
 import { writeStrudelAddress } from '@/views/Tools/StrudelEditor/strudelAddress'
-import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
 
 const props = defineProps<{
   /** The draft name and code the tab opened the editor with, if any. */
@@ -25,7 +20,6 @@ const props = defineProps<{
 const emit = defineEmits<{
   close: []
   add: [label: string, code: string]
-  import: [label: string, code: string]
 }>()
 
 // The whole editor, with its patterns, sounds, timeline and MIDI, only loads when it is opened.
@@ -33,10 +27,16 @@ const StrudelEditor = defineAsyncComponent(
   () => import('@/views/Tools/StrudelEditor/StrudelEditor.vue')
 )
 
-// Before the editor mounts, so it opens on the draft rather than on its last saved code.
-if (props.initialCode !== undefined && props.initialCode.trim().length > 0) {
-  writeStorage(STRUDEL_SAVED_CODE_STORAGE_KEY, props.initialCode)
-}
+// The editor only writes its code key when it is edited, so Save straight after opening would
+// read nothing. Seed the key with the same starting code the editor picks.
+const defaultExample =
+  STRUDEL_EXAMPLES.find((example) => example.id === DEFAULT_STRUDEL_EXAMPLE_ID) ??
+  STRUDEL_EXAMPLES[0]
+const startingCode =
+  props.initialCode !== undefined && props.initialCode.trim().length > 0
+    ? props.initialCode
+    : (readStorage(STRUDEL_SAVED_CODE_STORAGE_KEY) ?? defaultExample?.code ?? '')
+writeStorage(STRUDEL_SAVED_CODE_STORAGE_KEY, startingCode)
 
 const route = useRoute()
 const router = useRouter()
@@ -44,15 +44,10 @@ const dialogReference = ref<HTMLElement | null>(null)
 const { focusedHint, inputSource } = useDialogFocusTrap(dialogReference)
 const isFullscreen = ref(false)
 
-const librarySongs = computed<StrudelExample[]>(() => [
-  ...ELECTRO_TUNES,
-  ...toSavedPatternExamples(readSavedPatterns(readStorage(STRUDEL_SAVED_PATTERNS_STORAGE_KEY)))
-])
-
-const importCurrentCode = (): void => {
+const saveCurrentCode = (): void => {
   const code = readStorage(STRUDEL_SAVED_CODE_STORAGE_KEY)
   if (code === null || code.trim().length === 0) return
-  emit('import', props.initialName ?? '', code)
+  emit('add', props.initialName ?? '', code)
 }
 
 const close = (): void => {
@@ -87,9 +82,7 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
     <div class="rgsed__bar">
       <h2 class="rgsed__title">Strudel editor</h2>
       <div class="rgsed__actions">
-        <LobbyUIButton variant="cta" size="sm" @click="importCurrentCode">
-          Import code
-        </LobbyUIButton>
+        <LobbyUIButton variant="cta" size="sm" @click="saveCurrentCode"> Save song </LobbyUIButton>
         <LobbyUIButton variant="ghost" size="sm" @click="toggleFullscreen">
           {{ isFullscreen ? 'Windowed' : 'Full screen' }}
         </LobbyUIButton>
@@ -97,24 +90,8 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
       </div>
     </div>
 
-    <div class="rgsed__main">
-      <div class="rgsed__library">
-        <p class="rgsed__hint">Pick a song to import it into the list.</p>
-        <div v-for="song in librarySongs" :key="song.id" class="rgsed__song">
-          <span class="rgsed__song-label">{{ song.label }}</span>
-          <LobbyUIButton
-            variant="ghost"
-            size="sm"
-            :aria-label="`Import ${song.label}`"
-            @click="emit('add', song.label, song.code)"
-          >
-            Import
-          </LobbyUIButton>
-        </div>
-      </div>
-      <div class="rgsed__body">
-        <StrudelEditor />
-      </div>
+    <div class="rgsed__body">
+      <StrudelEditor />
     </div>
 
     <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
@@ -161,60 +138,9 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
   gap: var(--spacing-2);
 }
 
-.rgsed__main {
-  display: flex;
-  flex: 1;
-  gap: var(--spacing-3);
-  min-height: 0;
-}
-
-.rgsed__library {
-  display: flex;
-  flex-direction: column;
-  gap: var(--spacing-1);
-  width: 16rem;
-  min-height: 0;
-  overflow-y: auto;
-}
-
-.rgsed__hint {
-  margin: 0 0 var(--spacing-1);
-  color: var(--lui-text-color);
-  font-family: var(--lui-font);
-  font-size: var(--lui-text-tiny);
-  text-shadow: var(--lui-text-shadow);
-}
-
-.rgsed__song {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--spacing-1);
-}
-
-.rgsed__song-label {
-  color: var(--lui-text-color);
-  font-family: var(--lui-font);
-  font-size: var(--lui-text-small);
-  font-weight: 700;
-  text-shadow: var(--lui-text-shadow);
-  text-transform: uppercase;
-}
-
 .rgsed__body {
   flex: 1;
   min-width: 0;
   min-height: 0;
-}
-
-@media (width <= 720px) {
-  .rgsed__main {
-    flex-direction: column;
-  }
-
-  .rgsed__library {
-    width: auto;
-    max-height: 8rem;
-  }
 }
 </style>

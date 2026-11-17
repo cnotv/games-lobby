@@ -1,11 +1,15 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
-import { ELECTRO_TUNES } from '@/views/Tools/StrudelEditor/config'
 import {
-  STRUDEL_SAVED_CODE_STORAGE_KEY,
-  STRUDEL_SAVED_PATTERNS_STORAGE_KEY
+  DEFAULT_STRUDEL_EXAMPLE_ID,
+  STRUDEL_EXAMPLES,
+  STRUDEL_SAVED_CODE_STORAGE_KEY
 } from '@/views/Tools/StrudelEditor/config'
+
+const defaultExample =
+  STRUDEL_EXAMPLES.find((example) => example.id === DEFAULT_STRUDEL_EXAMPLE_ID) ??
+  STRUDEL_EXAMPLES[0]
 
 vi.mock('@/views/Tools/StrudelEditor/StrudelEditor.vue', () => ({
   __esModule: true,
@@ -24,7 +28,6 @@ const setStorage = (map: Record<string, string>): void => {
 
 const clearStorage = (): void => {
   localStorage.removeItem(STRUDEL_SAVED_CODE_STORAGE_KEY)
-  localStorage.removeItem(STRUDEL_SAVED_PATTERNS_STORAGE_KEY)
 }
 
 const importButton = (wrapper: ReturnType<typeof mount>, label: string) =>
@@ -61,58 +64,35 @@ describe('RhythmGameSongEditorDialog', () => {
     expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe('s("sd")')
   })
 
-  it('lists the built-in songs and the saved ones', async () => {
-    // Arrange
-    setStorage({
-      [STRUDEL_SAVED_PATTERNS_STORAGE_KEY]: JSON.stringify([
-        { name: 'Night line', code: 's("bd")' },
-        { name: 'Bass line', code: 's("hh")' }
-      ])
-    })
-
-    // Act
-    const wrapper = mount(RhythmGameSongEditorDialog)
-    const text = wrapper.text()
-
-    // Assert
-    expect(text).toContain(ELECTRO_TUNES[0].label)
-    expect(text).toContain('Night line')
-    expect(text).toContain('Bass line')
-  })
-
-  it('imports a library song', async () => {
-    // Arrange
-    const wrapper = mount(RhythmGameSongEditorDialog)
-    await wrapper.vm.$nextTick()
-
-    // Act
-    await importButton(wrapper, 'Import')?.trigger('click')
-
-    // Assert
-    expect(wrapper.emitted('add')).toEqual([[ELECTRO_TUNES[0].label, ELECTRO_TUNES[0].code]])
-  })
-
-  it('imports the code on the editor screen', async () => {
+  it('saves the code on the editor screen into the list', async () => {
     // Arrange
     setStorage({ [STRUDEL_SAVED_CODE_STORAGE_KEY]: 's("cp*3")' })
     const wrapper = mount(RhythmGameSongEditorDialog, { props: { initialName: 'Night line' } })
 
     // Act
-    await importButton(wrapper, 'Import code')?.trigger('click')
+    await importButton(wrapper, 'Save song')?.trigger('click')
 
     // Assert
-    expect(wrapper.emitted('import')).toEqual([['Night line', 's("cp*3")']])
+    expect(wrapper.emitted('add')).toEqual([['Night line', 's("cp*3")']])
   })
 
-  it('does not import an empty editor code', async () => {
+  it('seeds the default example when there is no saved code', async () => {
+    // Act
+    await mount(RhythmGameSongEditorDialog)
+
+    // Assert
+    expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe(defaultExample.code)
+  })
+
+  it('saves the seeded default code when nothing was typed', async () => {
     // Arrange
     const wrapper = mount(RhythmGameSongEditorDialog)
 
     // Act
-    await importButton(wrapper, 'Import code')?.trigger('click')
+    await importButton(wrapper, 'Save song')?.trigger('click')
 
     // Assert
-    expect(wrapper.emitted('import')).toBeUndefined()
+    expect(wrapper.emitted('add')).toEqual([['', defaultExample.code]])
   })
 
   it('closes and strips the editor address', async () => {

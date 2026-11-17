@@ -67,12 +67,6 @@ const handleEditorAdd = (label: string, code: string): void => {
   emit('add', label, code)
   editorOpen.value = false
 }
-
-const handleEditorImport = (label: string, code: string): void => {
-  draftName.value = label
-  draftCode.value = code
-  editorOpen.value = false
-}
 </script>
 
 <template>
@@ -143,7 +137,6 @@ $: note("c2 eb2 g2").s("bass")'
       :initial-code="draftCode"
       @close="closeEditor"
       @add="handleEditorAdd"
-      @import="handleEditorImport"
     />
   </div>
 </template>
