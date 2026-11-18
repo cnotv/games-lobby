@@ -37,8 +37,8 @@ const clearStorage = (): void => {
   localStorage.removeItem(STRUDEL_SAVED_CODE_STORAGE_KEY)
 }
 
-const importButton = (wrapper: ReturnType<typeof mount>, label: string) =>
-  wrapper.findAll('button').find((button) => button.text() === label)
+const findButton = (wrapper: ReturnType<typeof mount>, title: string) =>
+  wrapper.findAll('button').find((button) => button.attributes('title') === title)
 
 describe('RhythmGameSongEditorDialog', () => {
   beforeEach(() => {
@@ -79,7 +79,7 @@ describe('RhythmGameSongEditorDialog', () => {
     })
 
     // Act
-    await importButton(wrapper, 'Save song')?.trigger('click')
+    await findButton(wrapper, 'Save the song')?.trigger('click')
 
     // Assert
     expect(wrapper.emitted('add')).toEqual([['Night line', 's("cp*3")']])
@@ -98,7 +98,7 @@ describe('RhythmGameSongEditorDialog', () => {
     const wrapper = mountDialog()
 
     // Act
-    await importButton(wrapper, 'Save song')?.trigger('click')
+    await findButton(wrapper, 'Save the song')?.trigger('click')
 
     // Assert
     expect(wrapper.emitted('add')).toEqual([['', defaultExample.code]])
@@ -109,7 +109,7 @@ describe('RhythmGameSongEditorDialog', () => {
     const wrapper = mountDialog()
 
     // Act
-    await importButton(wrapper, 'Close')?.trigger('click')
+    await findButton(wrapper, 'Close the editor')?.trigger('click')
 
     // Assert
     expect(wrapper.emitted('close')).toEqual([[]])
@@ -130,12 +130,12 @@ describe('RhythmGameSongEditorDialog', () => {
     root.requestFullscreen = requestFullscreen
 
     // Act
-    await importButton(wrapper, 'Full screen')?.trigger('click')
+    await findButton(wrapper, 'Full screen')?.trigger('click')
 
     // Assert
     expect(requestFullscreen).toHaveBeenCalledTimes(1)
 
-    // Act: the browser reports the change, flipping the button label
+    // Act: the browser reports the change, flipping the button title
     Object.defineProperty(document, 'fullscreenElement', {
       configurable: true,
       get: () => document.body
@@ -144,10 +144,10 @@ describe('RhythmGameSongEditorDialog', () => {
     await wrapper.vm.$nextTick()
 
     // Assert
-    expect(importButton(wrapper, 'Windowed')).toBeDefined()
+    expect(findButton(wrapper, 'Exit full screen')).toBeDefined()
 
     // Act
-    await importButton(wrapper, 'Windowed')?.trigger('click')
+    await findButton(wrapper, 'Exit full screen')?.trigger('click')
 
     // Assert
     expect(exitFullscreen).toHaveBeenCalledTimes(1)
