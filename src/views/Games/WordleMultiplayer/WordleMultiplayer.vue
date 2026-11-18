@@ -71,6 +71,7 @@ const session = useWordleMultiplayerSession({
 })
 
 const { isHost, localPeerId } = session
+const hasOtherPlayers = computed(() => playerList.value.length > 1)
 const showSidebar = ref(false)
 const lastReadCount = ref(0)
 const unreadCount = computed(() => Math.max(0, messages.value.length - lastReadCount.value))
@@ -191,6 +192,7 @@ onMounted(() => {
     class="wl"
     :phase="phase"
     :show-sidebar="showSidebar"
+    :sidebar-visible="hasOtherPlayers"
     :style="backgroundStyle"
     @leave-room="handleLeaveRoom"
   >
@@ -276,7 +278,7 @@ onMounted(() => {
       />
     </template>
 
-    <template #tabbar>
+    <template v-if="hasOtherPlayers" #tabbar>
       <GameTabBar v-model:show-sidebar="showSidebar" :unread-count="unreadCount" />
     </template>
   </LobbyLayout>

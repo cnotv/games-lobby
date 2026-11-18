@@ -85,6 +85,7 @@ const session = usePictionarySession({
 })
 
 const { isHost, isDrawer, localPeerId } = session
+const hasOtherPlayers = computed(() => playerList.value.length > 1)
 const COUNTDOWN_TICK_SECONDS = 5
 const showSidebar = ref(false)
 const lastReadCount = ref(0)
@@ -209,6 +210,7 @@ onMounted(() => {
     class="pictionary"
     :phase="phase"
     :show-sidebar="showSidebar"
+    :sidebar-visible="hasOtherPlayers"
     sidebar-width="320px"
     :hide-header-on-mobile="['drawing', 'choosing'].includes(phase)"
     :style="backgroundStyle"
@@ -312,7 +314,7 @@ onMounted(() => {
       />
     </template>
 
-    <template #tabbar>
+    <template v-if="hasOtherPlayers" #tabbar>
       <GameTabBar v-model:show-sidebar="showSidebar" :unread-count="unreadCount" />
     </template>
   </LobbyLayout>

@@ -251,6 +251,7 @@ const confirmRunDialog = (): void => {
   pending?.onConfirm()
 }
 
+const hasOtherPlayers = computed(() => playerList.value.length > 1)
 const showSidebar = ref(false)
 const lastReadCount = ref(0)
 const unreadCount = computed(() => Math.max(0, messages.value.length - lastReadCount.value))
@@ -329,7 +330,7 @@ onUnmounted(() => {
     class="rr"
     :phase="phase"
     :show-sidebar="showSidebar"
-    :sidebar-visible="!store.solo"
+    :sidebar-visible="hasOtherPlayers"
     :main-placement="phase !== 'lobby' ? 'fill' : 'center'"
     @leave-room="handleLeaveRoom"
   >
@@ -420,7 +421,7 @@ onUnmounted(() => {
       />
     </div>
 
-    <template v-if="!store.solo" #sidebar>
+    <template #sidebar>
       <MultiplayerSidebar
         :players="sidebarPlayers"
         :local-peer-id="localPeerId"
@@ -430,7 +431,7 @@ onUnmounted(() => {
       />
     </template>
 
-    <template v-if="!store.solo" #tabbar>
+    <template v-if="hasOtherPlayers" #tabbar>
       <GameTabBar v-model:show-sidebar="showSidebar" :unread-count="unreadCount" />
     </template>
   </LobbyLayout>
