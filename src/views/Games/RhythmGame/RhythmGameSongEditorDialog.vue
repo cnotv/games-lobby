@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { LobbyUIButton, LobbyUIFocusHint } from '@/components/LobbyUI'
+import { Maximize2, Minimize2, Save, X } from 'lucide-vue-next'
+import { LobbyUIFocusHint, LobbyUIIconButton } from '@/components/LobbyUI'
 import { useDialogFocusTrap } from '@/composables/useDialogFocusTrap'
 import { readStorage, writeStorage } from '@/utils/storage'
 import {
@@ -72,36 +73,46 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
 </script>
 
 <template>
-  <div
-    ref="dialogReference"
-    class="rgsed"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Strudel editor"
-  >
-    <div class="rgsed__bar">
-      <h2 class="rgsed__title">Strudel editor</h2>
-      <div class="rgsed__actions">
-        <LobbyUIButton variant="cta" size="sm" @click="saveCurrentCode"> Save song </LobbyUIButton>
-        <LobbyUIButton variant="ghost" size="sm" @click="toggleFullscreen">
-          {{ isFullscreen ? 'Windowed' : 'Full screen' }}
-        </LobbyUIButton>
-        <LobbyUIButton variant="ghost" size="sm" @click="close">Close</LobbyUIButton>
+  <Teleport to="body">
+    <div
+      ref="dialogReference"
+      class="rgsed"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Strudel editor"
+    >
+      <div class="rgsed__bar">
+        <LobbyUIIconButton variant="primary" title="Save the song" @click="saveCurrentCode">
+          <Save class="rgsed__icon" aria-hidden="true" />
+        </LobbyUIIconButton>
+        <LobbyUIIconButton
+          class="rgsed__fullscreen-toggle"
+          :title="isFullscreen ? 'Exit full screen' : 'Full screen'"
+          @click="toggleFullscreen"
+        >
+          <Minimize2 v-if="isFullscreen" class="rgsed__icon" aria-hidden="true" />
+          <Maximize2 v-else class="rgsed__icon" aria-hidden="true" />
+        </LobbyUIIconButton>
+        <LobbyUIIconButton title="Close the editor" @click="close">
+          <X class="rgsed__icon" aria-hidden="true" />
+        </LobbyUIIconButton>
       </div>
-    </div>
 
-    <div class="rgsed__body">
-      <StrudelEditor />
-    </div>
+      <div class="rgsed__body">
+        <StrudelEditor />
+      </div>
 
-    <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
-  </div>
+      <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
 .rgsed {
   position: fixed;
-  inset: var(--spacing-4);
+  inset: 0;
+  box-sizing: border-box;
+  padding: var(--spacing-4);
   z-index: var(--z-overlay);
   display: flex;
   flex-direction: column;
@@ -112,35 +123,32 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
   --strudel-editor-height: 100%;
 }
 
-.rgsed:fullscreen {
-  inset: 0;
-}
-
 .rgsed__bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--spacing-3);
-}
-
-.rgsed__title {
-  margin: 0;
-  font-family: var(--lui-font);
-  font-size: var(--lui-text-medium);
-  color: var(--lui-text-color);
-  text-shadow: var(--lui-text-shadow);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.rgsed__actions {
-  display: flex;
+  justify-content: flex-end;
   gap: var(--spacing-2);
+}
+
+.rgsed__icon {
+  width: 1.2em;
+  height: 1.2em;
+  filter: var(--lui-icon-shadow);
 }
 
 .rgsed__body {
   flex: 1;
   min-width: 0;
   min-height: 0;
+}
+
+/* Phones have no reliable Fullscreen API and no room to spare, so the dialog is the screen. */
+@media (width <= 720px) {
+  .rgsed {
+    padding: var(--spacing-2);
+  }
+
+  .rgsed__fullscreen-toggle {
+    display: none;
+  }
 }
 </style>

@@ -195,10 +195,11 @@ const {
 } = storeToRefs(lobbyStore)
 const onlineCount = computed(() => Object.keys(lobbyPlayers.value).length)
 const roomCount = computed(() => Object.keys(lobbyRooms.value).length)
+const hasOtherPlayers = computed(() => onlineCount.value > 1)
 
-const profileOpen = ref(true)
-const presenceOpen = ref(true)
-const roomsOpen = ref(true)
+const profileOpen = ref(false)
+const presenceOpen = ref(false)
+const roomsOpen = ref(false)
 
 const lobbyRoot = ref<HTMLElement | null>(null)
 const focusRow = ref(0)
@@ -325,7 +326,11 @@ onMounted(async () => {
   <div
     ref="lobbyRoot"
     class="lobby"
-    :class="{ 'lobby--in-game': !!activeComponent, 'lobby--ready': fontReady }"
+    :class="{
+      'lobby--in-game': !!activeComponent,
+      'lobby--ready': fontReady,
+      'lobby--no-sidebar': !activeComponent && !hasOtherPlayers
+    }"
   >
     <!-- Main content area -->
     <main class="lobby__main">
@@ -354,7 +359,7 @@ onMounted(async () => {
             <span class="lobby__game-name">{{ GAME_LABELS[game] }}</span>
           </button>
         </div>
-        <div data-nav-row>
+        <div v-if="hasOtherPlayers" data-nav-row>
           <LobbyUIButton variant="ghost" size="sm" @click="openSettings">
             Settings
             <LobbyUIKeyPill :keyboard="['Enter']" :gamepad="['A']" />
@@ -364,7 +369,7 @@ onMounted(async () => {
     </main>
 
     <!-- Sidebar — hidden when a game is active -->
-    <aside v-if="!activeComponent" class="lobby__sidebar">
+    <aside v-if="!activeComponent && hasOtherPlayers" class="lobby__sidebar">
       <!-- Profile -->
       <div class="lobby__section" :class="{ 'lobby__section--collapsed': !profileOpen }">
         <button
@@ -479,7 +484,8 @@ onMounted(async () => {
   opacity: 1;
 }
 
-.lobby--in-game {
+.lobby--in-game,
+.lobby--no-sidebar {
   grid-template-columns: 1fr;
   grid-template-areas: 'main';
 }
@@ -667,6 +673,10 @@ onMounted(async () => {
 
   .lobby--in-game {
     grid-template-rows: auto 1fr;
+  }
+
+  .lobby--no-sidebar {
+    grid-template-rows: 1fr;
   }
 
   .lobby__sidebar {

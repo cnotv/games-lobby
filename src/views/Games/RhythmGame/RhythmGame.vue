@@ -65,6 +65,7 @@ session.onStart((payload) => {
   gameStartAt.value = payload.startAt
 })
 
+const hasOtherPlayers = computed(() => playerList.value.length > 1)
 const showSidebar = ref(false)
 const lastReadCount = ref(0)
 const unreadCount = computed(() => Math.max(0, messages.value.length - lastReadCount.value))
@@ -191,6 +192,7 @@ onMounted(() => {
     class="rg"
     :phase="phase"
     :show-sidebar="showSidebar"
+    :sidebar-visible="hasOtherPlayers"
     :main-placement="phase === 'playing' ? 'fill' : 'center'"
     :style="backgroundStyle"
     @leave-room="handleLeaveRoom"
@@ -252,7 +254,7 @@ onMounted(() => {
       @song-end="handleSongEnd"
     />
 
-    <template v-if="!store.solo" #sidebar>
+    <template #sidebar>
       <MultiplayerSidebar
         :players="sidebarPlayers"
         :local-peer-id="localPeerId"
@@ -262,7 +264,7 @@ onMounted(() => {
       />
     </template>
 
-    <template v-if="!store.solo" #tabbar>
+    <template v-if="hasOtherPlayers" #tabbar>
       <GameTabBar v-model:show-sidebar="showSidebar" :unread-count="unreadCount" />
     </template>
   </LobbyLayout>
