@@ -1,4 +1,4 @@
-import { mount } from '@vue/test-utils'
+import { mount, type ComponentMountingOptions } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
 import {
@@ -6,6 +6,13 @@ import {
   STRUDEL_EXAMPLES,
   STRUDEL_SAVED_CODE_STORAGE_KEY
 } from '@/views/Tools/StrudelEditor/config'
+
+// The dialog teleports to the body so it can cover the viewport; the tests read it in place.
+const mountDialog = (options: ComponentMountingOptions<typeof RhythmGameSongEditorDialog> = {}) =>
+  mount(RhythmGameSongEditorDialog, {
+    ...options,
+    global: { ...options.global, stubs: { teleport: true } }
+  })
 
 const defaultExample =
   STRUDEL_EXAMPLES.find((example) => example.id === DEFAULT_STRUDEL_EXAMPLE_ID) ??
@@ -45,7 +52,7 @@ describe('RhythmGameSongEditorDialog', () => {
 
   it('opens the editor on the code the tab handed it', async () => {
     // Arrange + Act
-    await mount(RhythmGameSongEditorDialog, {
+    await mountDialog({
       props: { initialName: 'Night line', initialCode: 's("bd")' }
     })
 
@@ -58,7 +65,7 @@ describe('RhythmGameSongEditorDialog', () => {
     setStorage({ [STRUDEL_SAVED_CODE_STORAGE_KEY]: 's("sd")' })
 
     // Act
-    await mount(RhythmGameSongEditorDialog)
+    await mountDialog()
 
     // Assert
     expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe('s("sd")')
@@ -67,7 +74,9 @@ describe('RhythmGameSongEditorDialog', () => {
   it('saves the code on the editor screen into the list', async () => {
     // Arrange
     setStorage({ [STRUDEL_SAVED_CODE_STORAGE_KEY]: 's("cp*3")' })
-    const wrapper = mount(RhythmGameSongEditorDialog, { props: { initialName: 'Night line' } })
+    const wrapper = mountDialog({
+      props: { initialName: 'Night line' }
+    })
 
     // Act
     await importButton(wrapper, 'Save song')?.trigger('click')
@@ -78,7 +87,7 @@ describe('RhythmGameSongEditorDialog', () => {
 
   it('seeds the default example when there is no saved code', async () => {
     // Act
-    await mount(RhythmGameSongEditorDialog)
+    await mountDialog()
 
     // Assert
     expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe(defaultExample.code)
@@ -86,7 +95,7 @@ describe('RhythmGameSongEditorDialog', () => {
 
   it('saves the seeded default code when nothing was typed', async () => {
     // Arrange
-    const wrapper = mount(RhythmGameSongEditorDialog)
+    const wrapper = mountDialog()
 
     // Act
     await importButton(wrapper, 'Save song')?.trigger('click')
@@ -97,7 +106,7 @@ describe('RhythmGameSongEditorDialog', () => {
 
   it('closes and strips the editor address', async () => {
     // Arrange
-    const wrapper = mount(RhythmGameSongEditorDialog)
+    const wrapper = mountDialog()
 
     // Act
     await importButton(wrapper, 'Close')?.trigger('click')
@@ -116,7 +125,7 @@ describe('RhythmGameSongEditorDialog', () => {
     const requestFullscreen = vi.fn()
     const exitFullscreen = vi.fn()
     document.exitFullscreen = exitFullscreen
-    const wrapper = mount(RhythmGameSongEditorDialog, { attachTo: document.body })
+    const wrapper = mountDialog({ attachTo: document.body })
     const root = wrapper.find('.rgsed').element
     root.requestFullscreen = requestFullscreen
 

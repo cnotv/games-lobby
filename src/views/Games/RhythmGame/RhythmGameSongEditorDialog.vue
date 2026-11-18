@@ -72,30 +72,39 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
 </script>
 
 <template>
-  <div
-    ref="dialogReference"
-    class="rgsed"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Strudel editor"
-  >
-    <div class="rgsed__bar">
-      <h2 class="rgsed__title">Strudel editor</h2>
-      <div class="rgsed__actions">
-        <LobbyUIButton variant="cta" size="sm" @click="saveCurrentCode"> Save song </LobbyUIButton>
-        <LobbyUIButton variant="ghost" size="sm" @click="toggleFullscreen">
-          {{ isFullscreen ? 'Windowed' : 'Full screen' }}
-        </LobbyUIButton>
-        <LobbyUIButton variant="ghost" size="sm" @click="close">Close</LobbyUIButton>
+  <Teleport to="body">
+    <div
+      ref="dialogReference"
+      class="rgsed"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Strudel editor"
+    >
+      <div class="rgsed__bar">
+        <h2 class="rgsed__title">Strudel editor</h2>
+        <div class="rgsed__actions">
+          <LobbyUIButton variant="cta" size="sm" @click="saveCurrentCode">
+            Save song
+          </LobbyUIButton>
+          <LobbyUIButton
+            class="rgsed__fullscreen-toggle"
+            variant="ghost"
+            size="sm"
+            @click="toggleFullscreen"
+          >
+            {{ isFullscreen ? 'Windowed' : 'Full screen' }}
+          </LobbyUIButton>
+          <LobbyUIButton variant="ghost" size="sm" @click="close">Close</LobbyUIButton>
+        </div>
       </div>
-    </div>
 
-    <div class="rgsed__body">
-      <StrudelEditor />
-    </div>
+      <div class="rgsed__body">
+        <StrudelEditor />
+      </div>
 
-    <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
-  </div>
+      <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -142,5 +151,20 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
   flex: 1;
   min-width: 0;
   min-height: 0;
+}
+
+/* Phones have no reliable Fullscreen API and no room to spare, so the dialog is the screen. */
+@media (width <= 720px) {
+  .rgsed {
+    inset: 0;
+  }
+
+  .rgsed__bar {
+    padding: var(--spacing-2) var(--spacing-3);
+  }
+
+  .rgsed__fullscreen-toggle {
+    display: none;
+  }
 }
 </style>
