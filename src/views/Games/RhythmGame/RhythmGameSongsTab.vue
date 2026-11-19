@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { LobbyUIButton, LobbyUINameInput, LobbyUIRow } from '@/components/LobbyUI'
 import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
-import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
+import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import { parseStrudelInstrumentFlag } from './pastedStrudelSongs'
 
 const props = defineProps<{

@@ -1,11 +1,7 @@
-import { mount, type ComponentMountingOptions } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount, type ComponentMountingOptions } from '@vue/test-utils'
+import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
-import {
-  DEFAULT_STRUDEL_EXAMPLE_ID,
-  STRUDEL_EXAMPLES,
-  STRUDEL_SAVED_CODE_STORAGE_KEY
-} from '@/views/Tools/StrudelEditor/config'
 
 // The dialog teleports to the body so it can cover the viewport; the tests read it in place.
 const mountDialog = (options: ComponentMountingOptions<typeof RhythmGameSongEditorDialog> = {}) =>
@@ -14,13 +10,12 @@ const mountDialog = (options: ComponentMountingOptions<typeof RhythmGameSongEdit
     global: { ...options.global, stubs: { teleport: true } }
   })
 
-const defaultExample =
-  STRUDEL_EXAMPLES.find((example) => example.id === DEFAULT_STRUDEL_EXAMPLE_ID) ??
-  STRUDEL_EXAMPLES[0]
-
-vi.mock('@/views/Tools/StrudelEditor/StrudelEditor.vue', () => ({
-  __esModule: true,
-  default: { name: 'StrudelEditor', template: '<div data-testid="editor" />' }
+vi.mock('@webgamekit/strudel-editor', () => ({
+  StrudelEditor: {
+    name: 'StrudelEditor',
+    props: ['code'],
+    template: '<div data-testid="editor" />'
+  }
 }))
 
 const { mockReplace } = vi.hoisted(() => ({ mockReplace: vi.fn() }))
@@ -29,54 +24,44 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ query: { game: 'RhythmGame' } })
 }))
 
-const setStorage = (map: Record<string, string>): void => {
-  Object.entries(map).forEach(([key, value]) => localStorage.setItem(key, value))
-}
-
-const clearStorage = (): void => {
-  localStorage.removeItem(STRUDEL_SAVED_CODE_STORAGE_KEY)
-}
-
 const findButton = (wrapper: ReturnType<typeof mount>, title: string) =>
   wrapper.findAll('button').find((button) => button.attributes('title') === title)
 
+// The editor loads on demand; a test that ends before it arrives leaves the import dangling.
+const waitForEditor = (wrapper: ReturnType<typeof mount>) =>
+  vi.waitFor(() => expect(wrapper.find('[data-testid="editor"]').exists()).toBe(true))
+
+const reportEditorCode = async (wrapper: ReturnType<typeof mount>, code: string) => {
+  await waitForEditor(wrapper)
+  wrapper.findComponent({ name: 'StrudelEditor' }).vm.$emit('update:code', code)
+  await nextTick()
+}
+
 describe('RhythmGameSongEditorDialog', () => {
   beforeEach(() => {
-    clearStorage()
     vi.clearAllMocks()
   })
 
-  afterEach(() => {
-    clearStorage()
-  })
-
-  it('opens the editor on the code the tab handed it', async () => {
-    // Arrange + Act
-    await mountDialog({
+  it('saves the code the tab handed it while the editor has reported none', async () => {
+    // Arrange
+    const wrapper = mountDialog({
       props: { initialName: 'Night line', initialCode: 's("bd")' }
     })
 
-    // Assert
-    expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe('s("bd")')
-  })
-
-  it('does not overwrite the editor code when opened with none', async () => {
-    // Arrange
-    setStorage({ [STRUDEL_SAVED_CODE_STORAGE_KEY]: 's("sd")' })
+    await waitForEditor(wrapper)
 
     // Act
-    await mountDialog()
+    await findButton(wrapper, 'Save the song')?.trigger('click')
 
     // Assert
-    expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe('s("sd")')
+    expect(wrapper.emitted('add')).toEqual([['Night line', 's("bd")']])
   })
 
-  it('saves the code on the editor screen into the list', async () => {
+  it('saves the code the editor reports into the list', async () => {
     // Arrange
-    setStorage({ [STRUDEL_SAVED_CODE_STORAGE_KEY]: 's("cp*3")' })
-    const wrapper = mountDialog({
-      props: { initialName: 'Night line' }
-    })
+    const wrapper = mountDialog({ props: { initialName: 'Night line' } })
+    await flushPromises()
+    await reportEditorCode(wrapper, 's("cp*3")')
 
     // Act
     await findButton(wrapper, 'Save the song')?.trigger('click')
@@ -85,23 +70,16 @@ describe('RhythmGameSongEditorDialog', () => {
     expect(wrapper.emitted('add')).toEqual([['Night line', 's("cp*3")']])
   })
 
-  it('seeds the default example when there is no saved code', async () => {
-    // Act
-    await mountDialog()
-
-    // Assert
-    expect(localStorage.getItem(STRUDEL_SAVED_CODE_STORAGE_KEY)).toBe(defaultExample.code)
-  })
-
-  it('saves the seeded default code when nothing was typed', async () => {
+  it('adds nothing while the editor has reported no code', async () => {
     // Arrange
     const wrapper = mountDialog()
+    await flushPromises()
 
     // Act
     await findButton(wrapper, 'Save the song')?.trigger('click')
 
     // Assert
-    expect(wrapper.emitted('add')).toEqual([['', defaultExample.code]])
+    expect(wrapper.emitted('add')).toBeUndefined()
   })
 
   it('closes and strips the editor address', async () => {

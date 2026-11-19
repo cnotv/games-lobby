@@ -1,4 +1,4 @@
-import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
+import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import { GAME_INSTRUMENTS } from './config'
 import type { RgInstrument } from './config'
 

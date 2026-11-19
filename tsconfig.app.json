@@ -7,8 +7,7 @@
     "noEmit": false,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@webgamekit/strudel-flow": ["./packages/strudel-flow/src/index.ts"]
+      "@/*": ["./src/*"]
     }
   }
 }
