@@ -2,7 +2,7 @@ import { createNoteScheduler, type NoteScheduler } from '@webgamekit/audio'
 import { BACKING_VOLUME } from './config'
 import { startSlowedBacking } from './slowedBacking'
 import { songMsFromPosition } from './strudelSong'
-import type { StrudelLiveSong } from '@/views/Tools/StrudelEditor/types'
+import type { StrudelLiveSong } from '@webgamekit/strudel-editor/helpers'
 
 /**
  * The sound of a round: the note scheduler, and either a shipped song's recording played at the
@@ -48,7 +48,7 @@ export const createRhythmAudio = (
   }
 
   const playLiveSong = async (code: string): Promise<void> => {
-    const { playStrudelSong } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
+    const { playStrudelSong } = await import('@webgamekit/strudel-editor/helpers')
     const liveSong = await playStrudelSong(code).catch(() => null)
     if (audio.stopped) {
       await liveSong?.stop()

@@ -49,6 +49,6 @@ export const createStrudelNotesCache = (
 /** The page's one cache, so notes written in the lobby are still there after a round. */
 export const strudelSongNotes = createStrudelNotesCache(async (songCode) => {
   // Loaded here so the Strudel engine only downloads once the lobby asks for a song.
-  const { renderStrudelCodeToNotes } = await import('@/views/Tools/StrudelEditor/strudelPlayback')
+  const { renderStrudelCodeToNotes } = await import('@webgamekit/strudel-editor/helpers')
   return renderStrudelCodeToNotes(songCode)
 })

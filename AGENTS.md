@@ -3,9 +3,9 @@
 The multiplayer games site at games.cnotv.xyz: a lobby with chat, presence and rooms at
 `/`, and ten games in `src/views/Games/` (Pictionary, Wordle, Squares, Minigolf, Bubbles,
 Rhythm, Marbles, Marble Builder, Rock Runner, Word Runner), played peer to peer over
-`@webgamekit/multiplayer-p2p`. Rock Runner's sound panel embeds a copy of the Strudel editor
-(`src/views/Tools/StrudelEditor`, `packages/strudel-flow`). It was cut out of
-[cnotv/generative-art](https://github.com/cnotv/generative-art) and uses its packages from npm.
+`@webgamekit/multiplayer-p2p`. Rhythm and Rock Runner's sound panel use the Strudel editor from npm
+(`@webgamekit/strudel-editor`, built from [cnotv/strudel-node-editor](https://github.com/cnotv/strudel-node-editor)).
+The site was cut out of [cnotv/generative-art](https://github.com/cnotv/generative-art) and uses its packages from npm.
 
 This file holds the rules that apply to every change. Rules for one area load from
 `.claude/rules/`, procedures from agent-base's `workflow` plugin and `.claude/skills/` — all

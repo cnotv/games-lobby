@@ -5,17 +5,9 @@ import vue from '@vitejs/plugin-vue'
 import wasm from 'vite-plugin-wasm'
 import basicSsl from '@vitejs/plugin-basic-ssl'
 
-const packages = ['strudel-flow']
 // The leading dot allows cnotv.xyz and every subdomain, since a `vite preview` container
 // rejects any Host header it does not list.
 const allowedHosts = ['.cnotv.xyz']
-
-const packageAliases = Object.fromEntries(
-  packages.map((package_) => [
-    `@webgamekit/${package_}`,
-    fileURLToPath(new URL(`./packages/${package_}/src/index.ts`, import.meta.url))
-  ])
-)
 
 // The device orientation and fullscreen APIs only work in a secure context, so reaching the
 // dev server from a phone over the LAN needs HTTPS. Opt in with VITE_HTTPS=1 (pnpm dev:mobile)
@@ -27,17 +19,7 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
   plugins: [vue(), wasm(), ...(useHttps ? [basicSsl()] : [])],
   resolve: {
-    alias: [
-      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
-      ...Object.entries(packageAliases).map(([find, replacement]) => ({ find, replacement })),
-      // @strudel/midi's source reaches superdough through a monorepo-only relative path.
-      {
-        find: /^\.\.\/superdough\/helpers\.mjs$/,
-        replacement: fileURLToPath(
-          new URL('./src/views/Tools/StrudelEditor/strudelMidiScheduling.ts', import.meta.url)
-        )
-      }
-    ],
+    alias: [{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) }],
     dedupe: ['three']
   },
   css: {
@@ -63,8 +45,7 @@ export default defineConfig({
     }
   },
   optimizeDeps: {
-    // @strudel/midi stays out of pre-bundling so the alias above can reach its relative import.
-    exclude: ['@dimforge/rapier3d-compat', 'trystero', 'trystero/nostr', '@strudel/midi']
+    exclude: ['@dimforge/rapier3d-compat', 'trystero', 'trystero/nostr']
   },
   server: {
     allowedHosts

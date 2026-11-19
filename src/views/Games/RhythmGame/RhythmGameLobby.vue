@@ -23,7 +23,7 @@ import {
   findStrudelTrackIndex,
   parseStrudelInstrumentFlag
 } from './pastedStrudelSongs'
-import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
+import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgInstrument, RgSong, RhythmNote } from './config'
 

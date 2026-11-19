@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import type { Ref } from 'vue'
 import { readStorage, writeStorage } from '@/utils/storage'
-import type { StrudelExample } from '@/views/Tools/StrudelEditor/types'
+import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import { PASTED_STRUDEL_SONGS_STORAGE_KEY } from './config'
 import {
   addPastedSong,

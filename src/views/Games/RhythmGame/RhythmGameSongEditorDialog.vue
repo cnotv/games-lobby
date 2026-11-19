@@ -4,13 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { Maximize2, Minimize2, Save, X } from 'lucide-vue-next'
 import { LobbyUIFocusHint, LobbyUIIconButton } from '@/components/LobbyUI'
 import { useDialogFocusTrap } from '@/composables/useDialogFocusTrap'
-import { readStorage, writeStorage } from '@/utils/storage'
-import {
-  DEFAULT_STRUDEL_EXAMPLE_ID,
-  STRUDEL_EXAMPLES,
-  STRUDEL_SAVED_CODE_STORAGE_KEY
-} from '@/views/Tools/StrudelEditor/config'
-import { writeStrudelAddress } from '@/views/Tools/StrudelEditor/strudelAddress'
+import { writeStrudelAddress } from '@webgamekit/strudel-editor/helpers'
 
 const props = defineProps<{
   /** The draft name and code the tab opened the editor with, if any. */
@@ -24,20 +18,13 @@ const emit = defineEmits<{
 }>()
 
 // The whole editor, with its patterns, sounds, timeline and MIDI, only loads when it is opened.
-const StrudelEditor = defineAsyncComponent(
-  () => import('@/views/Tools/StrudelEditor/StrudelEditor.vue')
+const StrudelEditor = defineAsyncComponent(() =>
+  import('@webgamekit/strudel-editor').then((module) => module.StrudelEditor)
 )
 
-// The editor only writes its code key when it is edited, so Save straight after opening would
-// read nothing. Seed the key with the same starting code the editor picks.
-const defaultExample =
-  STRUDEL_EXAMPLES.find((example) => example.id === DEFAULT_STRUDEL_EXAMPLE_ID) ??
-  STRUDEL_EXAMPLES[0]
-const startingCode =
-  props.initialCode !== undefined && props.initialCode.trim().length > 0
-    ? props.initialCode
-    : (readStorage(STRUDEL_SAVED_CODE_STORAGE_KEY) ?? defaultExample?.code ?? '')
-writeStorage(STRUDEL_SAVED_CODE_STORAGE_KEY, startingCode)
+// The editor reports the code on screen, its own starting song included, so Save straight after
+// opening still has something to add.
+const editorCode = ref(props.initialCode?.trim() ? props.initialCode : undefined)
 
 const route = useRoute()
 const router = useRouter()
@@ -46,8 +33,8 @@ const { focusedHint, inputSource } = useDialogFocusTrap(dialogReference)
 const isFullscreen = ref(false)
 
 const saveCurrentCode = (): void => {
-  const code = readStorage(STRUDEL_SAVED_CODE_STORAGE_KEY)
-  if (code === null || code.trim().length === 0) return
+  const code = editorCode.value
+  if (code === undefined || code.trim().length === 0) return
   emit('add', props.initialName ?? '', code)
 }
 
@@ -99,7 +86,7 @@ onUnmounted(() => document.removeEventListener('fullscreenchange', readFullscree
       </div>
 
       <div class="rgsed__body">
-        <StrudelEditor />
+        <StrudelEditor v-model:code="editorCode" />
       </div>
 
       <LobbyUIFocusHint :hint="focusedHint" :visible="inputSource === 'gamepad'" />
