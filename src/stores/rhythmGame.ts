@@ -47,6 +47,8 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
   /** A Strudel song plays live from this code, its tempo already set for the round. */
   const customStrudelCode = ref<string | null>(null)
   const customTempoRate = ref(1)
+  /** The lobby's picked Strudel or MIDI song, so a lobby opened again can show it. */
+  const customSongValue = ref<string | null>(null)
   const backgroundNotes = ref<ScheduledNote[] | null>(null)
 
   const playerList = computed(() => Object.values(players.value).sort((a, b) => b.score - a.score))
@@ -103,6 +105,7 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
     customSongName,
     customStrudelCode,
     customTempoRate,
+    customSongValue,
     backgroundNotes,
     playerList,
     hostId,

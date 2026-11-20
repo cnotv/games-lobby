@@ -151,3 +151,6 @@ export const SONGS: RgSongDef[] = [
     chartUrl: gridStormChart
   }
 ]
+
+/** Where songs pasted with the old Songs tab were kept, before the Strudel editor held them. */
+export const LEGACY_PASTED_SONGS_STORAGE_KEY = 'rhythm-game-pasted-strudel-songs'

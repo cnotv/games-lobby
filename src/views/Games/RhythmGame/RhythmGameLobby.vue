@@ -5,7 +5,7 @@ import '@/assets/styles/lobby-ui.scss'
 import RhythmGameSummary from './RhythmGameSummary.vue'
 import type { LobbyConfigField, LobbyPlayer } from '@/types/lobbyWizard'
 import { MATCHMAKER_ROOM, CONTROLS_CONFIG, DIFFICULTIES, DIFFICULTY_TEMPO, SONGS } from './config'
-import type { RgPlayer } from '@/stores/rhythmGame'
+import { useRhythmGameStore, type RgPlayer } from '@/stores/rhythmGame'
 import {
   midiStorageList,
   midiStorageLoad,
@@ -23,6 +23,7 @@ import {
   parseStrudelInstrumentFlag
 } from './strudelInstruments'
 import { readStrudelSavedSongs, STRUDEL_SONGS } from '@webgamekit/strudel-editor/helpers'
+import { migrateLegacyPastedSongs } from './legacyPastedSongs'
 import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgInstrument, RgSong, RhythmNote } from './config'
@@ -61,12 +62,14 @@ const emit = defineEmits<{
   'update:difficulty': [difficulty: RgDifficulty]
 }>()
 
+const store = useRhythmGameStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const library = ref<MidiLibraryEntry[]>([])
 const selectedMidiId = ref<string | null>(null)
 const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
 // The songs saved in the Strudel editor come first, then the songs it ships with.
+migrateLegacyPastedSongs()
 const savedSongs = ref<StrudelExample[]>(readStrudelSavedSongs())
 const strudelSongs = computed(() => [...savedSongs.value, ...STRUDEL_SONGS])
 const editorOpen = ref(false)
@@ -97,9 +100,19 @@ const writeSongsAhead = (): void => {
   void strudelSongNotes.prefetch(strudelSongs.value, () => lobbyClosed.value)
 }
 
+// The lobby is rebuilt when a round ends or is left, so the song picked before is picked again.
+const restorePickedSong = async (): Promise<void> => {
+  const pickedValue = store.customSongValue
+  if (pickedValue === null) return
+  const isStillThere = songField.value.options?.some((option) => option.value === pickedValue)
+  if (isStillThere) await pickSong(pickedValue)
+  else fallBackToDefaultSong()
+}
+
 onMounted(async () => {
   await loadLibrary()
   if (lobbyClosed.value) return
+  void restorePickedSong()
   if (navigator.userActivation?.hasBeenActive) writeSongsAhead()
   else ACTIVATION_EVENTS.forEach((name) => window.addEventListener(name, writeSongsAhead))
 })
@@ -200,6 +213,7 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
+  store.customSongValue = `${STRUDEL_SONG_PREFIX}${strudelId}`
   strudelSong.value = null
   renderingStrudelId.value = strudelId
   const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
@@ -216,8 +230,7 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
     emitStrudelSong(props.difficulty)
   } catch {
     if (!isStillPicked()) return
-    selectedStrudelId.value = null
-    emit('songPicked', SONGS[0].id)
+    fallBackToDefaultSong()
   } finally {
     if (renderingStrudelId.value === strudelId) renderingStrudelId.value = null
   }
@@ -234,10 +247,12 @@ const pickSong = async (songValue: string): Promise<void> => {
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
     selectedMidiId.value = null
+    store.customSongValue = null
     emit('songPicked', builtInSong.id)
     return
   }
   selectedMidiId.value = songValue
+  store.customSongValue = songValue
   const firstTrack = library.value.find((e) => e.id === songValue)?.tracks[0]
   if (!firstTrack) return
   selectedTrackIndex.value = firstTrack.index
@@ -287,6 +302,7 @@ const handleFileChange = async (event: Event): Promise<void> => {
   renderingStrudelId.value = null
   strudelSong.value = null
   selectedMidiId.value = id
+  store.customSongValue = id
   selectedTrackIndex.value = firstTrack.index
   const trackLabel = tracks.length > 1 ? `${name} — ${firstTrack.name}` : name
   const gameNotes = parseMidiTrack(buf, firstTrack.index, 'hard')
@@ -298,6 +314,7 @@ const handleDelete = async (): Promise<void> => {
   if (!selectedMidiId.value) return
   await midiStorageDelete(selectedMidiId.value)
   selectedMidiId.value = null
+  store.customSongValue = null
   selectedTrackIndex.value = 0
   emit('songPicked', SONGS[0].id)
   await loadLibrary()
