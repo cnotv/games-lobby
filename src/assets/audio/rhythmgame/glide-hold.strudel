@@ -12,18 +12,18 @@ const pad = note("<[a3,c4,e4] [f3,a3,c4] [c4,e4,g4] [g3,b3,d4]>")
   .s("sawtooth").lpf(700).attack(.3).release(.6).room(.4).gain(.12)
 const bass = note("<a2 f2 c2 g2>").s("sine").decay(.9).sustain(.2).gain(.5)
 
-// Each bar mixes a held note (@4 is the whole bar, @2 half of it) with a couple of quick ones.
+// Each bar holds a note (@3 is three beats, @2 two) and leaves a rest before the next press.
 const verse = note(`<
-  [e5@4]
-  [c5@2 [d5 e5 d5 e5]@2]
-  [g5@3 e5@1]
-  [d5@2 b4@2]>`)
+  [e5@3 ~]
+  [c5@2 ~ [d5 e5]]
+  [g5@2 ~ [e5 ~]]
+  [d5@2 ~ [b4 ~]]>`)
 const lift = note(`<
-  [a5@2 g5@2]
-  [e5@1 g5@1 c6@2]
-  [d6@4]
-  [b5@2 [g5 b5 g5 b5]@2]>`)
-const ending = note("<[a4@4] ~>")
+  [a5@2 ~ [g5 ~]]
+  [e5 ~ g5 ~]
+  [d6@3 ~]
+  [b5@2 ~ [g5 b5]]>`)
+const ending = note("<[a4@3 ~] ~>")
 
 const lead = arrange([4, silence], [4, verse], [4, lift], [4, verse], [2, ending])
   .s("triangle").attack(.02).release(.25).gain(.35)
