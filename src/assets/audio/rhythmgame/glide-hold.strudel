@@ -12,18 +12,19 @@ const pad = note("<[a3,c4,e4] [f3,a3,c4] [c4,e4,g4] [g3,b3,d4]>")
   .s("sawtooth").lpf(700).attack(.3).release(.6).room(.4).gain(.12)
 const bass = note("<a2 f2 c2 g2>").s("sine").decay(.9).sustain(.2).gain(.5)
 
-// Each bar holds a note (@3 is three beats, @2 two) and leaves a rest before the next press.
+// Each bar holds a note for two beats and rests for the other two, so the bars on screen are
+// clearly apart. A bracket pair in a rest is a quick tap.
 const verse = note(`<
-  [e5@3 ~]
+  [e5@2 ~@2]
   [c5@2 ~ [d5 e5]]
-  [g5@2 ~ [e5 ~]]
-  [d5@2 ~ [b4 ~]]>`)
+  [g5@2 ~@2]
+  [d5@2 ~@2]>`)
 const lift = note(`<
-  [a5@2 ~ [g5 ~]]
+  [a5@2 ~@2]
   [e5 ~ g5 ~]
-  [d6@3 ~]
+  [d6@2 ~@2]
   [b5@2 ~ [g5 b5]]>`)
-const ending = note("<[a4@3 ~] ~>")
+const ending = note("<[a4@2 ~@2] ~>")
 
 const lead = arrange([4, silence], [4, verse], [4, lift], [4, verse], [2, ending])
   .s("triangle").attack(.02).release(.25).gain(.35)
