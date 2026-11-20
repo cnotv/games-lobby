@@ -23,8 +23,8 @@ const props = withDefaults(
     matchmakerRoom: string
     configFields: LobbyConfigField[]
     controls?: ControlsMapperGameConfig
-    /** Adds a third tab whose content comes from the `extra` slot, when a game needs one. */
-    extraTabLabel?: string
+    /** Adds a tab that runs an action, `actionTab`, instead of showing a page of its own. */
+    actionTabLabel?: string
     showResults?: boolean
     canStart?: boolean
   }>(),
@@ -40,29 +40,25 @@ const emit = defineEmits<{
   matchFound: [roomId: string]
   leaveRoom: []
   playAgain: []
+  actionTab: []
 }>()
 
 const mapperStore = props.controls
   ? useControlsMapperStore(props.controls.gameId, props.controls.defaultMapping)
   : null
 
-type WizardTab = 'game' | 'controls' | 'extra'
+const ACTION_TAB = 'action'
+type WizardTab = 'game' | 'controls'
 const wizardTab = ref<WizardTab>('game')
 const wizardTabOptions = computed(() => [
   { value: 'game', label: 'Game' },
   ...(props.controls ? [{ value: 'controls', label: 'Controls' }] : []),
-  ...(props.extraTabLabel ? [{ value: 'extra', label: props.extraTabLabel }] : [])
+  ...(props.actionTabLabel ? [{ value: ACTION_TAB, label: props.actionTabLabel }] : [])
 ])
 const setWizardTab = (value: string) => {
-  wizardTab.value = value as WizardTab
+  if (value === ACTION_TAB) emit('actionTab')
+  else wizardTab.value = value as WizardTab
 }
-
-watch(
-  () => props.extraTabLabel,
-  (extraTabLabel) => {
-    if (extraTabLabel === undefined && wizardTab.value === 'extra') wizardTab.value = 'game'
-  }
-)
 
 const route = useRoute()
 const fromLobby = computed(() => !!route.query.game)
@@ -130,7 +126,7 @@ onMounted(() => {
 
   <section ref="wizardRoot" class="lui-wizard">
     <div v-if="!showResults" class="lui-wizard__body">
-      <div v-if="controls || extraTabLabel" class="lui-wizard__tabs" data-lui-row>
+      <div v-if="controls || actionTabLabel" class="lui-wizard__tabs" data-lui-row>
         <LobbyUIOptionToggle
           :model-value="wizardTab"
           :options="wizardTabOptions"
@@ -145,8 +141,6 @@ onMounted(() => {
         :default-mapping="controls.defaultMapping"
         :faux-pad="controls.fauxPad"
       />
-
-      <slot v-else-if="wizardTab === 'extra'" name="extra" />
 
       <LobbyUIWizardForm
         v-else

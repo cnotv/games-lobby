@@ -22,7 +22,6 @@ export const COMBO_MULTIPLIERS = [2, 4, 8] as const
 export const SCORE_PERFECT = 300
 export const SCORE_GOOD = 100
 export const MATCHMAKER_ROOM = 'rhythm-game-matchmaker'
-export const PASTED_STRUDEL_SONGS_STORAGE_KEY = 'rhythm-game-pasted-strudel-songs'
 
 export const LANE_COLORS = ['#00e5ff', '#ff4081', '#ffd740', '#69ff47'] as const
 export const LANE_KEYS = ['D', 'F', 'J', 'K'] as const
