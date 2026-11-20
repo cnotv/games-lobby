@@ -44,8 +44,8 @@ importers:
         specifier: ^0.1.1
         version: 0.1.1(trystero@0.23.0)
       '@webgamekit/strudel-editor':
-        specifier: ^0.3.0
-        version: 0.3.0(@codemirror/lint@6.9.7)(pinia@2.3.1(typescript@5.4.5)(vue@3.5.25(typescript@5.4.5)))(vue-router@4.6.3(vue@3.5.25(typescript@5.4.5)))(vue@3.5.25(typescript@5.4.5))
+        specifier: ^0.3.1
+        version: 0.3.1(@codemirror/lint@6.9.7)(pinia@2.3.1(typescript@5.4.5)(vue@3.5.25(typescript@5.4.5)))(vue-router@4.6.3(vue@3.5.25(typescript@5.4.5)))(vue@3.5.25(typescript@5.4.5))
       '@webgamekit/strudel-flow':
         specifier: ^0.2.0
         version: 0.2.0(vue@3.5.25(typescript@5.4.5))
@@ -1739,8 +1739,8 @@ packages:
     peerDependencies:
       trystero: ^0.23.0
 
-  '@webgamekit/strudel-editor@0.3.0':
-    resolution: {integrity: sha512-2aIYaf5sauQbz+iDOeGNl9hPRLgpHH4QG/ycu6RK+xS69IzuxcqlPhFPQC3YR5WKL3sau/fdd8DA2FnlNgXyjQ==}
+  '@webgamekit/strudel-editor@0.3.1':
+    resolution: {integrity: sha512-rTSlkMpXH6GmemrhDZvrtgBTjyMiwmHwRpSH6780k5zq6e4CM8o0TjVLKyCqtWaY3Npeh/e2hZu+n3E31rxiTA==}
     peerDependencies:
       pinia: ^2.3.0
       vue: ^3.4.21
@@ -6280,7 +6280,7 @@ snapshots:
     dependencies:
       trystero: 0.23.0
 
-  '@webgamekit/strudel-editor@0.3.0(@codemirror/lint@6.9.7)(pinia@2.3.1(typescript@5.4.5)(vue@3.5.25(typescript@5.4.5)))(vue-router@4.6.3(vue@3.5.25(typescript@5.4.5)))(vue@3.5.25(typescript@5.4.5))':
+  '@webgamekit/strudel-editor@0.3.1(@codemirror/lint@6.9.7)(pinia@2.3.1(typescript@5.4.5)(vue@3.5.25(typescript@5.4.5)))(vue-router@4.6.3(vue@3.5.25(typescript@5.4.5)))(vue@3.5.25(typescript@5.4.5))':
     dependencies:
       '@codemirror/autocomplete': 6.20.4
       '@codemirror/commands': 6.11.1
