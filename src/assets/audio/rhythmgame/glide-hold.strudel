@@ -1,0 +1,33 @@
+// Glide Hold: a slow A minor tune in 100 BPM whose lead holds its notes, to practise long presses.
+// Paste it in the Rhythm Songs tab. One cycle is one bar.
+// instrument: triangle
+// lead: triangle, pad: sawtooth, bass: sine, drum: RolandTR808
+setcpm(100/4)
+
+const kit = "RolandTR808"
+const kick = s("bd ~ ~ ~").bank(kit).gain(.8)
+const hats = s("hh*4").bank(kit).hpf(7000).gain(.25)
+
+const pad = note("<[a3,c4,e4] [f3,a3,c4] [c4,e4,g4] [g3,b3,d4]>")
+  .s("sawtooth").lpf(700).attack(.3).release(.6).room(.4).gain(.12)
+const bass = note("<a2 f2 c2 g2>").s("sine").decay(.9).sustain(.2).gain(.5)
+
+// Each bar mixes a held note (@4 is the whole bar, @2 half of it) with a couple of quick ones.
+const verse = note(`<
+  [e5@4]
+  [c5@2 [d5 e5 d5 e5]@2]
+  [g5@3 e5@1]
+  [d5@2 b4@2]>`)
+const lift = note(`<
+  [a5@2 g5@2]
+  [e5@1 g5@1 c6@2]
+  [d6@4]
+  [b5@2 [g5 b5 g5 b5]@2]>`)
+const ending = note("<[a4@4] ~>")
+
+const lead = arrange([4, silence], [4, verse], [4, lift], [4, verse], [2, ending])
+  .s("triangle").attack(.02).release(.25).gain(.35)
+
+const backing = arrange([4, stack(kick, hats)], [12, stack(kick, hats, pad, bass)], [2, pad])
+
+stack(lead, backing).postgain(.6)

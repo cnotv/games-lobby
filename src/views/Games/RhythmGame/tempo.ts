@@ -8,7 +8,11 @@ import type { RhythmNote } from './config'
  * @returns The chart's notes at the new tempo
  */
 export const slowChartNotes = (notes: RhythmNote[], tempoRate: number): RhythmNote[] =>
-  notes.map((note) => ({ ...note, time: Math.round(note.time / tempoRate) }))
+  notes.map((note) => ({
+    ...note,
+    time: Math.round(note.time / tempoRate),
+    ...(note.durationMs !== undefined && { durationMs: Math.round(note.durationMs / tempoRate) })
+  }))
 
 /**
  * Slows scheduled sound the way a record played slow is slowed: later, longer and lower, so it

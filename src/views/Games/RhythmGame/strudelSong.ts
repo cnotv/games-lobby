@@ -31,10 +31,13 @@ export const buildStrudelChart = (
 ): RhythmNote[] => parseMidiTrack(midiBuffer, trackIndex, difficulty)
 
 const MILLISECONDS_PER_SECOND = 1000
+const SONG_TEMPO_CALL_PATTERN = /\bsetcp[ms]\(/g
 
 /**
- * The code a round plays live: the song, then its tempo set last so it wins over the song's own,
- * slowed to the difficulty's rate. Changing the tempo, unlike a slowed recording, keeps the pitch.
+ * The code a round plays live: the round's tempo first, slowed to the difficulty's rate, and the
+ * song after it with its own tempo calls voided so they cannot win. The song stays last because a
+ * song written as one bare pattern plays only its final statement. Changing the tempo, unlike a
+ * slowed recording, keeps the pitch.
  * @param songCode - The song as written
  * @param cyclesPerSecond - The tempo the song sets for itself
  * @param tempoRate - Share of full speed, 1 for as written
@@ -44,7 +47,8 @@ export const buildLiveSongCode = (
   songCode: string,
   cyclesPerSecond: number,
   tempoRate: number
-): string => `${songCode}\nsetcps(${cyclesPerSecond * tempoRate})\n`
+): string =>
+  `setcps(${cyclesPerSecond * tempoRate})\n${songCode.replaceAll(SONG_TEMPO_CALL_PATTERN, 'void(')}\n`
 
 /**
  * How far into the song the live player is, so the falling notes follow what is heard.

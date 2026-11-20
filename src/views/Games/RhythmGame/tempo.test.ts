@@ -16,6 +16,11 @@ describe('slowChartNotes', () => {
     expect(slowed).toEqual([{ lane: 2, midiNote: 60, time: 2000 }])
   })
 
+  it('stretches a hold as long as the note it belongs to', () => {
+    const [slowed] = slowChartNotes([{ lane: 0, midiNote: 60, time: 1000, durationMs: 800 }], 0.5)
+    expect(slowed.durationMs).toBe(1600)
+  })
+
   it('leaves a full speed chart as it was', () => {
     const chart = [{ lane: 0 as const, midiNote: 64, time: 333 }]
     expect(slowChartNotes(chart, 1)).toEqual(chart)

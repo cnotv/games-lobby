@@ -68,14 +68,27 @@ describe('buildLiveSongCode', () => {
     [0.5, 0.75, 'setcps(0.375)'],
     [1, 0.85, 'setcps(0.85)']
   ])(
-    'plays a song written at %f cycles a second at %f of its speed with %s last',
-    (cyclesPerSecond, tempoRate, lastLine) => {
+    'plays a song written at %f cycles a second at %f of its speed with %s first',
+    (cyclesPerSecond, tempoRate, firstLine) => {
       const code = buildLiveSongCode('setcps(1)\ns("bd sd")', cyclesPerSecond, tempoRate)
 
-      expect(code.startsWith('setcps(1)\ns("bd sd")')).toBe(true)
-      expect(code.trim().split('\n').at(-1)).toBe(lastLine)
+      expect(code.split('\n')[0]).toBe(firstLine)
     }
   )
+
+  it('keeps a song written as one bare pattern ending with that pattern, which is what plays', () => {
+    const code = buildLiveSongCode('note("48 52").sound("piano")', 0.5, 1)
+
+    expect(code.trim().split('\n').at(-1)).toBe('note("48 52").sound("piano")')
+  })
+
+  it("stops the song's own tempo from winning over the round's", () => {
+    const code = buildLiveSongCode('setcpm(100/4)\nsetcps(0.4)\n$: s("bd")', 0.5, 1)
+
+    expect(code).not.toMatch(/setcp[ms]\((100|0\.4)/)
+    expect(code).toContain('void(100/4)')
+    expect(code).toContain('void(0.4)')
+  })
 })
 
 describe('songMsFromPosition', () => {

@@ -21,6 +21,11 @@ export const COMBO_THRESHOLDS = [10, 25, 50] as const
 export const COMBO_MULTIPLIERS = [2, 4, 8] as const
 export const SCORE_PERFECT = 300
 export const SCORE_GOOD = 100
+/** A note this long or longer is held rather than tapped. */
+export const HOLD_MIN_MS = 400
+/** How far below its true end a hold bar stops, so holds in a row show a gap between them. */
+export const HOLD_END_GAP_PX = 30
+export const SCORE_HOLD_BONUS = 200
 export const MATCHMAKER_ROOM = 'rhythm-game-matchmaker'
 
 export const LANE_COLORS = ['#00e5ff', '#ff4081', '#ffd740', '#69ff47'] as const
@@ -105,6 +110,10 @@ export type RhythmNote = {
   lane: RgLane
   midiNote: number
   time: number
+  /** Set on a sustained note: how long the player keeps the lane down. */
+  durationMs?: number
+  /** True from the press that starts a hold until it is released or reaches its end. */
+  holding?: boolean
   hit?: HitResult
 }
 

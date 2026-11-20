@@ -13,6 +13,7 @@ const makeDeps = (overrides: Partial<GameDeps> = {}): GameDeps => ({
   canvas: ref(null),
   song: 'custom',
   difficulty: 'hard',
+  holdNotes: true,
   instrument: 'bass',
   startAt: 0,
   customNotes: chart,
@@ -22,6 +23,16 @@ const makeDeps = (overrides: Partial<GameDeps> = {}): GameDeps => ({
 })
 
 describe('buildSongNotes', () => {
+  it('turns holds into taps when hold notes are off', () => {
+    const holdChart = [{ lane: 0 as const, midiNote: 60, time: 1000, durationMs: 900 }]
+
+    const on = buildSongNotes(holdChart, makeDeps({ holdNotes: true }), 1)
+    const off = buildSongNotes(holdChart, makeDeps({ holdNotes: false }), 1)
+
+    expect(on.chart[0].durationMs).toBe(900)
+    expect(off.chart[0].durationMs).toBeUndefined()
+  })
+
   it('plays the chart through the picked instrument for a live Strudel song', () => {
     // Arrange
     const deps = makeDeps({ customStrudelCode: 's("bd")' })
