@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import RhythmGameSongsTab from './RhythmGameSongsTab.vue'
 
 const findButton = (wrapper: ReturnType<typeof mount>, label: string) =>
-  wrapper.findAll('button').find((button) => button.text() === label)
+  wrapper.findAll('button').find((button) => button.attributes('aria-label')?.startsWith(label))
 
 describe('RhythmGameSongsTab', () => {
   it('emits the pasted code with its name and clears the form', async () => {
@@ -55,7 +55,7 @@ describe('RhythmGameSongsTab', () => {
     })
 
     // Act
-    await findButton(wrapper, 'Remove')?.trigger('click')
+    await findButton(wrapper, 'Remove Night drive')?.trigger('click')
 
     // Assert
     expect(wrapper.emitted('remove')).toEqual([['a']])

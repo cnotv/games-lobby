@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { LobbyUIButton, LobbyUINameInput, LobbyUIRow } from '@/components/LobbyUI'
+import { Code, Save, X } from 'lucide-vue-next'
+import { LobbyUIIconButton, LobbyUINameInput, LobbyUIRow } from '@/components/LobbyUI'
 import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
 import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import { parseStrudelInstrumentFlag } from './pastedStrudelSongs'
@@ -71,14 +72,23 @@ const handleEditorAdd = (label: string, code: string): void => {
 
 <template>
   <div class="rgs">
-    <p class="rgs__hint">
-      Paste a Strudel pattern. A <code>// instrument: bass</code> comment charts that instrument,
-      and names piano, bass or guitar also set the hit sound. Without one, the busiest instrument
-      charts.
-    </p>
-
     <LobbyUIRow label="Name" inline>
-      <LobbyUINameInput v-model="draftName" placeholder="Name (optional)" :maxlength="40" />
+      <div class="rgs__name-controls">
+        <LobbyUINameInput v-model="draftName" placeholder="Name (optional)" :maxlength="40" />
+        <LobbyUIIconButton v-if="editingId !== null" aria-label="Cancel edit" @click="cancelEdit">
+          <X class="rgs__icon" />
+        </LobbyUIIconButton>
+        <LobbyUIIconButton aria-label="Open editor" @click="openEditor">
+          <Code class="rgs__icon" />
+        </LobbyUIIconButton>
+        <LobbyUIIconButton
+          :aria-label="editingId !== null ? 'Update song' : 'Add song'"
+          :disabled="draftCode.trim().length === 0"
+          @click="addSong"
+        >
+          <Save class="rgs__icon" />
+        </LobbyUIIconButton>
+      </div>
     </LobbyUIRow>
 
     <textarea
@@ -90,21 +100,6 @@ const handleEditorAdd = (label: string, code: string): void => {
 $: note("c2 eb2 g2").s("bass")'
       spellcheck="false"
     />
-
-    <div class="rgs__actions">
-      <LobbyUIButton v-if="editingId !== null" variant="ghost" size="sm" @click="cancelEdit">
-        Cancel
-      </LobbyUIButton>
-      <LobbyUIButton variant="ghost" size="sm" @click="openEditor"> Editor </LobbyUIButton>
-      <LobbyUIButton
-        variant="cta"
-        size="sm"
-        :disabled="draftCode.trim().length === 0"
-        @click="addSong"
-      >
-        {{ editingId !== null ? 'Update song' : 'Add song' }}
-      </LobbyUIButton>
-    </div>
 
     <p v-if="songRows.length === 0" class="rgs__empty">No songs pasted yet.</p>
     <template v-else>
@@ -120,14 +115,9 @@ $: note("c2 eb2 g2").s("bass")'
           </button>
         </template>
         <span class="rgs__instrument">Instrument: {{ song.instrument ?? 'auto' }}</span>
-        <LobbyUIButton
-          variant="ghost"
-          size="sm"
-          :aria-label="`Remove ${song.label}`"
-          @click="emit('remove', song.id)"
-        >
-          Remove
-        </LobbyUIButton>
+        <LobbyUIIconButton :aria-label="`Remove ${song.label}`" @click="emit('remove', song.id)">
+          <X class="rgs__icon" />
+        </LobbyUIIconButton>
       </LobbyUIRow>
     </template>
 
@@ -148,18 +138,12 @@ $: note("c2 eb2 g2").s("bass")'
   gap: var(--spacing-2);
 }
 
-.rgs__hint,
 .rgs__empty {
   margin: 0;
   color: var(--lui-text-color);
   font-family: var(--lui-font);
   font-size: var(--lui-text-tiny);
   text-shadow: var(--lui-text-shadow);
-}
-
-.rgs__hint code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: var(--lui-text-micro);
 }
 
 .rgs__code {
@@ -188,10 +172,16 @@ $: note("c2 eb2 g2").s("bass")'
   border-color: var(--lui-focus-color);
 }
 
-.rgs__actions {
+.rgs__name-controls {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: var(--spacing-2);
+}
+
+.rgs__icon {
+  width: 1.3em;
+  height: 1.3em;
+  filter: drop-shadow(2px 2px 0 #000);
 }
 
 .rgs__instrument {

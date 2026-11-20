@@ -13,10 +13,12 @@ import type { LobbyConfigField } from '@/types/lobbyWizard'
 import { MAPPER_ACTIONS, MAPPER_DEVICES, FAUX_PAD_DIRECTIONS } from './config'
 import type { MapperActionConfig } from './types'
 import { useBindingCapture } from './useBindingCapture'
+import { useGamepadPlugged } from './useControlAvailability'
 
-const props = withDefaults(defineProps<{ gameId?: string; actions?: MapperActionConfig[] }>(), {
-  actions: () => MAPPER_ACTIONS
-})
+const props = withDefaults(
+  defineProps<{ gameId?: string; actions?: MapperActionConfig[]; fauxPad?: boolean }>(),
+  { actions: () => MAPPER_ACTIONS, fauxPad: true }
+)
 
 const store = useControlsMapperStore(props.gameId)
 const actions = computed(() => props.actions)
@@ -30,13 +32,26 @@ const DEVICE_ICONS: Record<string, Component> = {
   'faux-pad': Joystick
 }
 
-const deviceOptions = MAPPER_DEVICES.map((device) => ({
-  value: device.id,
-  label: device.label,
-  icon: DEVICE_ICONS[device.id]
-}))
+const gamepadPlugged = useGamepadPlugged()
 
-const activeDevice = computed(() => store.activeDevice)
+const isDeviceAvailable = (device: ControlDevice): boolean => {
+  if (device === 'gamepad') return gamepadPlugged.value
+  if (device === 'faux-pad') return props.fauxPad
+  return true
+}
+
+const deviceOptions = computed(() =>
+  MAPPER_DEVICES.filter((device) => isDeviceAvailable(device.id)).map((device) => ({
+    value: device.id,
+    label: device.label,
+    icon: DEVICE_ICONS[device.id]
+  }))
+)
+
+// A device that is gone (unplugged pad, hidden faux-pad) falls back to the keyboard.
+const activeDevice = computed(() =>
+  isDeviceAvailable(store.activeDevice) ? store.activeDevice : 'keyboard'
+)
 const setDevice = (device: string) => store.setActiveDevice(device as ControlDevice)
 
 const listeningActionId = ref<string | null>(null)

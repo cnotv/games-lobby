@@ -143,6 +143,7 @@ onMounted(() => {
         :game-id="controls.gameId"
         :actions="controls.actions"
         :default-mapping="controls.defaultMapping"
+        :faux-pad="controls.fauxPad"
       />
 
       <slot v-else-if="wizardTab === 'extra'" name="extra" />

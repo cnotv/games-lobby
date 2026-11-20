@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import '@/assets/styles/lobby-ui.scss'
 import { LobbyUIOptionToggle, LobbyUIButton } from '@/components/LobbyUI'
 import { useControlsMapperStore } from '@/stores/controlsMapper'
@@ -8,22 +8,25 @@ import ControlsMapperStyle from './ControlsMapperStyle.vue'
 import ControlsMapperPresets from './ControlsMapperPresets.vue'
 import type { MapperActionConfig } from './types'
 import type { ControlMapping } from '@webgamekit/controls'
+import { isTouchScreen } from './useControlAvailability'
 
 const props = defineProps<{
   gameId: string
   actions: MapperActionConfig[]
   defaultMapping?: ControlMapping
+  fauxPad?: boolean
 }>()
 
 const store = useControlsMapperStore(props.gameId, props.defaultMapping)
 
 type Tab = 'bindings' | 'style' | 'presets'
 const activeTab = ref<Tab>('bindings')
-const tabOptions = [
+const showFauxPad = props.fauxPad !== false && isTouchScreen()
+const tabOptions = computed(() => [
   { value: 'bindings', label: 'Bindings' },
-  { value: 'style', label: 'Style' },
+  ...(showFauxPad ? [{ value: 'style', label: 'Style' }] : []),
   { value: 'presets', label: 'Presets' }
-]
+])
 const setTab = (value: string) => {
   activeTab.value = value as Tab
 }
@@ -39,7 +42,12 @@ const setTab = (value: string) => {
       />
     </div>
 
-    <ControlsMapperBindings v-if="activeTab === 'bindings'" :game-id="gameId" :actions="actions" />
+    <ControlsMapperBindings
+      v-if="activeTab === 'bindings'"
+      :game-id="gameId"
+      :actions="actions"
+      :faux-pad="showFauxPad"
+    />
     <ControlsMapperStyle v-else-if="activeTab === 'style'" :game-id="gameId" />
     <ControlsMapperPresets v-else :game-id="gameId" />
 

@@ -71,7 +71,8 @@ export const CONTROLS_ACTIONS: MapperActionConfig[] = [
 export const CONTROLS_CONFIG: ControlsMapperGameConfig = {
   gameId: CONTROLS_GAME_ID,
   actions: CONTROLS_ACTIONS,
-  defaultMapping: GAMEPAD_MAPPING
+  defaultMapping: GAMEPAD_MAPPING,
+  fauxPad: false
 }
 
 export const GAMEPAD_AIM_SPEED_MIN = 0.4

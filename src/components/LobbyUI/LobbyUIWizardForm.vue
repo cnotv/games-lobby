@@ -36,7 +36,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <LobbyUIRow label="Name">
+  <LobbyUIRow v-if="playerList.length > 1" label="Name">
     <LobbyUINameInput
       :model-value="playerName"
       :maxlength="20"
@@ -47,7 +47,7 @@ const emit = defineEmits<{
     />
   </LobbyUIRow>
 
-  <LobbyUIRow label="Color">
+  <LobbyUIRow v-if="playerList.length > 1" label="Color">
     <LobbyUIColorSwatches
       :model-value="playerColor"
       :colors="PLAYER_COLORS"

@@ -59,7 +59,8 @@ export const CONTROLS_DEFAULT_MAPPING: ControlMapping = {
 export const CONTROLS_CONFIG: ControlsMapperGameConfig = {
   gameId: CONTROLS_GAME_ID,
   actions: CONTROLS_ACTIONS,
-  defaultMapping: CONTROLS_DEFAULT_MAPPING
+  defaultMapping: CONTROLS_DEFAULT_MAPPING,
+  fauxPad: false
 }
 
 export type RgDifficulty = 'easy' | 'medium' | 'hard'
