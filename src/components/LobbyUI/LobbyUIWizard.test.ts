@@ -26,9 +26,8 @@ const mountWizard = () =>
       roomId: 'room',
       matchmakerRoom: 'matchmaker',
       configFields: [],
-      extraTabLabel: 'Songs'
-    },
-    slots: { extra: '<p>Pasted songs</p>' }
+      actionTabLabel: 'Songs'
+    }
   })
 
 describe('LobbyUIWizard', () => {
@@ -42,10 +41,9 @@ describe('LobbyUIWizard', () => {
     // Assert
     expect(text).toContain('Game')
     expect(text).toContain('Songs')
-    expect(text).not.toContain('Pasted songs')
   })
 
-  it('shows the extra slot on its own tab', async () => {
+  it('runs the action of the Songs tab instead of opening a page', async () => {
     // Arrange
     const wrapper = mountWizard()
     const songsTab = wrapper.findAll('button').find((button) => button.text() === 'Songs')
@@ -54,6 +52,7 @@ describe('LobbyUIWizard', () => {
     await songsTab?.trigger('click')
 
     // Assert
-    expect(wrapper.text()).toContain('Pasted songs')
+    expect(wrapper.emitted('actionTab')).toEqual([[]])
+    expect(wrapper.text()).toContain('Private')
   })
 })

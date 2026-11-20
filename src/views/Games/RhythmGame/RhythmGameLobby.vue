@@ -5,7 +5,7 @@ import '@/assets/styles/lobby-ui.scss'
 import RhythmGameSummary from './RhythmGameSummary.vue'
 import type { LobbyConfigField, LobbyPlayer } from '@/types/lobbyWizard'
 import { MATCHMAKER_ROOM, CONTROLS_CONFIG, DIFFICULTIES, DIFFICULTY_TEMPO, SONGS } from './config'
-import type { RgPlayer } from '@/stores/rhythmGame'
+import { useRhythmGameStore, type RgPlayer } from '@/stores/rhythmGame'
 import {
   midiStorageList,
   midiStorageLoad,
@@ -16,13 +16,14 @@ import {
 import { getMidiTracks, parseMidiTrack, parseAllMidiNotes } from './parseMidi'
 import { buildLiveSongCode, buildStrudelChart, listStrudelTracks } from './strudelSong'
 import { strudelSongNotes } from './strudelNotesCache'
-import RhythmGameSongsTab from './RhythmGameSongsTab.vue'
-import { usePastedStrudelSongs } from './usePastedStrudelSongs'
+import RhythmGameSongEditorDialog from './RhythmGameSongEditorDialog.vue'
 import {
   findGameInstrumentName,
   findStrudelTrackIndex,
   parseStrudelInstrumentFlag
-} from './pastedStrudelSongs'
+} from './strudelInstruments'
+import { readStrudelSavedSongs, STRUDEL_SONGS } from '@webgamekit/strudel-editor/helpers'
+import { migrateLegacyPastedSongs } from './legacyPastedSongs'
 import type { StrudelExample } from '@webgamekit/strudel-editor/helpers'
 import type { MidiTrackInfo, ScheduledNote } from '@webgamekit/audio'
 import type { RgDifficulty, RgInstrument, RgSong, RhythmNote } from './config'
@@ -61,17 +62,17 @@ const emit = defineEmits<{
   'update:difficulty': [difficulty: RgDifficulty]
 }>()
 
+const store = useRhythmGameStore()
 const fileInput = ref<HTMLInputElement | null>(null)
 const library = ref<MidiLibraryEntry[]>([])
 const selectedMidiId = ref<string | null>(null)
 const selectedTrackIndex = ref(0)
 const STRUDEL_SONG_PREFIX = 'strudel:'
-const {
-  pastedSongs,
-  addSong: addPastedSong,
-  updateSong: updatePastedSong,
-  removeSong: removePastedSong
-} = usePastedStrudelSongs()
+// The songs saved in the Strudel editor come first, then the songs it ships with.
+migrateLegacyPastedSongs()
+const savedSongs = ref<StrudelExample[]>(readStrudelSavedSongs())
+const strudelSongs = computed(() => [...savedSongs.value, ...STRUDEL_SONGS])
+const editorOpen = ref(false)
 const selectedStrudelId = ref<string | null>(null)
 const strudelSong = ref<{
   code: string
@@ -90,18 +91,28 @@ const loadLibrary = async (): Promise<void> => {
 const lobbyClosed = { value: false }
 const ACTIVATION_EVENTS = ['pointerdown', 'keydown'] as const
 
-// Writing each pasted song's notes ahead makes a pick instant, and stops when the lobby closes so
+// Writing each Strudel song's notes ahead makes a pick instant, and stops when the lobby closes so
 // it never competes with a round's song for the engine. It waits for the player's first click or
 // key: the engine cannot start audio before one, and would wait for it with every pick queued
 // behind.
 const writeSongsAhead = (): void => {
   ACTIVATION_EVENTS.forEach((name) => window.removeEventListener(name, writeSongsAhead))
-  void strudelSongNotes.prefetch(pastedSongs.value, () => lobbyClosed.value)
+  void strudelSongNotes.prefetch(strudelSongs.value, () => lobbyClosed.value)
+}
+
+// The lobby is rebuilt when a round ends or is left, so the song picked before is picked again.
+const restorePickedSong = async (): Promise<void> => {
+  const pickedValue = store.customSongValue
+  if (pickedValue === null) return
+  const isStillThere = songField.value.options?.some((option) => option.value === pickedValue)
+  if (isStillThere) await pickSong(pickedValue)
+  else fallBackToDefaultSong()
 }
 
 onMounted(async () => {
   await loadLibrary()
   if (lobbyClosed.value) return
+  void restorePickedSong()
   if (navigator.userActivation?.hasBeenActive) writeSongsAhead()
   else ACTIVATION_EVENTS.forEach((name) => window.addEventListener(name, writeSongsAhead))
 })
@@ -126,7 +137,7 @@ const songField = computed(
         : `${STRUDEL_SONG_PREFIX}${selectedStrudelId.value}`,
     options: [
       ...SONGS.map((song) => ({ value: song.id, label: `${song.label} (${song.bpm} BPM)` })),
-      ...pastedSongs.value.map((song) => ({
+      ...strudelSongs.value.map((song) => ({
         value: `${STRUDEL_SONG_PREFIX}${song.id}`,
         label: song.label
       })),
@@ -183,7 +194,7 @@ const resolveTrackLabel = (midiId: string, trackIndex: number): string => {
 }
 
 const emitStrudelSong = (difficulty: RgDifficulty): void => {
-  const song = pastedSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
+  const song = strudelSongs.value.find((candidate) => candidate.id === selectedStrudelId.value)
   if (song === undefined || strudelSong.value === null) return
   const { code, cyclesPerSecond, midi } = strudelSong.value
   const tempoRate = DIFFICULTY_TEMPO[difficulty]
@@ -198,10 +209,11 @@ const emitStrudelSong = (difficulty: RgDifficulty): void => {
 }
 
 const pickStrudelSong = async (strudelId: string): Promise<void> => {
-  const song = pastedSongs.value.find((candidate) => candidate.id === strudelId)
+  const song = strudelSongs.value.find((candidate) => candidate.id === strudelId)
   if (song === undefined) return
   selectedMidiId.value = null
   selectedStrudelId.value = strudelId
+  store.customSongValue = `${STRUDEL_SONG_PREFIX}${strudelId}`
   strudelSong.value = null
   renderingStrudelId.value = strudelId
   const isStillPicked = (): boolean => selectedStrudelId.value === strudelId
@@ -218,8 +230,7 @@ const pickStrudelSong = async (strudelId: string): Promise<void> => {
     emitStrudelSong(props.difficulty)
   } catch {
     if (!isStillPicked()) return
-    selectedStrudelId.value = null
-    emit('songPicked', SONGS[0].id)
+    fallBackToDefaultSong()
   } finally {
     if (renderingStrudelId.value === strudelId) renderingStrudelId.value = null
   }
@@ -236,10 +247,12 @@ const pickSong = async (songValue: string): Promise<void> => {
   const builtInSong = SONGS.find((song) => song.id === songValue)
   if (builtInSong !== undefined) {
     selectedMidiId.value = null
+    store.customSongValue = null
     emit('songPicked', builtInSong.id)
     return
   }
   selectedMidiId.value = songValue
+  store.customSongValue = songValue
   const firstTrack = library.value.find((e) => e.id === songValue)?.tracks[0]
   if (!firstTrack) return
   selectedTrackIndex.value = firstTrack.index
@@ -289,6 +302,7 @@ const handleFileChange = async (event: Event): Promise<void> => {
   renderingStrudelId.value = null
   strudelSong.value = null
   selectedMidiId.value = id
+  store.customSongValue = id
   selectedTrackIndex.value = firstTrack.index
   const trackLabel = tracks.length > 1 ? `${name} — ${firstTrack.name}` : name
   const gameNotes = parseMidiTrack(buf, firstTrack.index, 'hard')
@@ -300,34 +314,51 @@ const handleDelete = async (): Promise<void> => {
   if (!selectedMidiId.value) return
   await midiStorageDelete(selectedMidiId.value)
   selectedMidiId.value = null
+  store.customSongValue = null
   selectedTrackIndex.value = 0
   emit('songPicked', SONGS[0].id)
   await loadLibrary()
 }
 
-const handleAddPastedSong = (label: string, code: string): void => {
-  const song = addPastedSong(label, code)
-  void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
-}
-
-const handleEditPastedSong = (song: StrudelExample): void => {
-  updatePastedSong(song)
-  if (selectedStrudelId.value === song.id) void pickSong(`${STRUDEL_SONG_PREFIX}${song.id}`)
-}
-
-const handleRemovePastedSong = (songId: string): void => {
-  const wasSelected = selectedStrudelId.value === songId
-  removePastedSong(songId)
-  if (!wasSelected) return
+const fallBackToDefaultSong = (): void => {
   selectedStrudelId.value = null
   renderingStrudelId.value = null
   strudelSong.value = null
+  store.customSongValue = null
   selectedTrackIndex.value = 0
   emit('songPicked', SONGS[0].id)
+}
+
+// The editor can save, change or delete songs, so the list is read again when it closes, and a
+// picked song whose code changed is written again rather than played from the old notes.
+const refreshSavedSongs = (): void => {
+  const previousSongs = savedSongs.value
+  savedSongs.value = readStrudelSavedSongs()
+  const changedSongIds = previousSongs
+    .filter(
+      (previousSong) =>
+        savedSongs.value.find((song) => song.id === previousSong.id)?.code !== previousSong.code
+    )
+    .map((song) => song.id)
+  changedSongIds.forEach((songId) => strudelSongNotes.forgetSong(songId))
+  const pickedId = selectedStrudelId.value
+  if (pickedId === null || !changedSongIds.includes(pickedId)) return
+  if (strudelSongs.value.some((song) => song.id === pickedId)) {
+    void pickSong(`${STRUDEL_SONG_PREFIX}${pickedId}`)
+  } else {
+    fallBackToDefaultSong()
+  }
+}
+
+const closeEditor = (): void => {
+  editorOpen.value = false
+  refreshSavedSongs()
 }
 </script>
 
 <template>
+  <RhythmGameSongEditorDialog v-if="editorOpen" @close="closeEditor" />
+
   <LobbyUIWizard
     :player-name="playerName"
     :player-color="playerColor"
@@ -337,7 +368,7 @@ const handleRemovePastedSong = (songId: string): void => {
     :matchmaker-room="MATCHMAKER_ROOM"
     :config-fields="configFields"
     :controls="CONTROLS_CONFIG"
-    :extra-tab-label="isHost ? 'Songs' : undefined"
+    :action-tab-label="isHost ? 'Songs' : undefined"
     :show-results="showResults"
     :can-start="renderingStrudelId === null"
     @update:player-name="emit('update:playerName', $event)"
@@ -348,17 +379,9 @@ const handleRemovePastedSong = (songId: string): void => {
     @match-found="emit('matchFound', $event)"
     @leave-room="emit('leaveRoom')"
     @play-again="emit('playAgain')"
+    @action-tab="editorOpen = true"
     @instrument-picked="emit('instrumentPicked', $event)"
   >
-    <template #extra>
-      <RhythmGameSongsTab
-        :songs="pastedSongs"
-        @add="handleAddPastedSong"
-        @edit="handleEditPastedSong"
-        @remove="handleRemovePastedSong"
-      />
-    </template>
-
     <template #profile-extra>
       <LobbyUIRow v-if="isHost" label="Your MIDI" inline>
         <LobbyUIButton variant="ghost" size="sm" @click="fileInput?.click()">Upload</LobbyUIButton>

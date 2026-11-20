@@ -22,7 +22,6 @@ export const COMBO_MULTIPLIERS = [2, 4, 8] as const
 export const SCORE_PERFECT = 300
 export const SCORE_GOOD = 100
 export const MATCHMAKER_ROOM = 'rhythm-game-matchmaker'
-export const PASTED_STRUDEL_SONGS_STORAGE_KEY = 'rhythm-game-pasted-strudel-songs'
 
 export const LANE_COLORS = ['#00e5ff', '#ff4081', '#ffd740', '#69ff47'] as const
 export const LANE_KEYS = ['D', 'F', 'J', 'K'] as const
@@ -59,7 +58,8 @@ export const CONTROLS_DEFAULT_MAPPING: ControlMapping = {
 export const CONTROLS_CONFIG: ControlsMapperGameConfig = {
   gameId: CONTROLS_GAME_ID,
   actions: CONTROLS_ACTIONS,
-  defaultMapping: CONTROLS_DEFAULT_MAPPING
+  defaultMapping: CONTROLS_DEFAULT_MAPPING,
+  fauxPad: false
 }
 
 export type RgDifficulty = 'easy' | 'medium' | 'hard'
@@ -151,3 +151,6 @@ export const SONGS: RgSongDef[] = [
     chartUrl: gridStormChart
   }
 ]
+
+/** Where songs pasted with the old Songs tab were kept, before the Strudel editor held them. */
+export const LEGACY_PASTED_SONGS_STORAGE_KEY = 'rhythm-game-pasted-strudel-songs'

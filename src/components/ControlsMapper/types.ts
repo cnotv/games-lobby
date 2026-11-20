@@ -16,4 +16,6 @@ export interface ControlsMapperGameConfig {
   gameId: string
   actions: MapperActionConfig[]
   defaultMapping?: ControlMapping
+  /** False for a game with no on-screen faux-pad, so its Style tab and device have nothing to set. */
+  fauxPad?: boolean
 }

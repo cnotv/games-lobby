@@ -99,11 +99,6 @@ const {
 const handleLeaveRoom = (): void => {
   store.phase = 'lobby'
   store.solo = false
-  store.customNotes = null
-  store.backgroundNotes = null
-  store.customSongName = ''
-  store.customStrudelCode = null
-  store.customTempoRate = 1
   leaveRoom()
 }
 
@@ -128,6 +123,7 @@ const handleSongPicked = (pickedSong: RgSong): void => {
   store.customSongName = ''
   store.customStrudelCode = null
   store.customTempoRate = 1
+  store.customSongValue = null
   store.song = pickedSong
 }
 
