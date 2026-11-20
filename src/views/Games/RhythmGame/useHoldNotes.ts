@@ -1,4 +1,4 @@
-import type { RhythmNote } from './config'
+import type { HitResult, RhythmNote } from './config'
 import type { useRoundScore } from './useRoundScore'
 import { evaluateRelease, findHeldNoteIndex, getHoldBonus } from './rhythmGameUtilities'
 
@@ -10,6 +10,8 @@ type HoldDeps = {
   readCurrentMs: () => number
   round: Pick<ReturnType<typeof useRoundScore>, 'score' | 'combo' | 'registerHit' | 'emitScore'>
   laneFlashes: LaneFlash[]
+  /** Shows the verdict on screen: the press already showed the hold's head as a hit. */
+  showResult: (result: HitResult) => void
 }
 
 /**
@@ -26,6 +28,7 @@ export const useHoldNotes = (deps: HoldDeps) => {
     if (isComplete) deps.round.score.value += getHoldBonus(deps.round.combo.value)
     else deps.round.registerHit('miss')
     deps.laneFlashes[note.lane] = { alpha: 0.6, result: isComplete ? 'perfect' : 'miss' }
+    deps.showResult(isComplete ? 'perfect' : 'miss')
     deps.round.emitScore()
   }
 

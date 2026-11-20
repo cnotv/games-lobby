@@ -385,7 +385,11 @@ export const useRhythmGame = (deps: GameDeps) => {
     getNotes: () => notes,
     readCurrentMs,
     round: { score, combo, registerHit, emitScore },
-    laneFlashes
+    laneFlashes,
+    showResult: (result) => {
+      lastHit.value = result
+      hitKey.value++
+    }
   })
 
   const gameLoop = (timestamp: number): void => {
