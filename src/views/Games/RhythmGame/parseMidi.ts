@@ -1,7 +1,7 @@
 import { Midi } from '@tonejs/midi'
 import { midiGetTracks } from '@webgamekit/audio'
 import type { ScheduledNote } from '@webgamekit/audio'
-import type { RhythmNote, RgLane, RgDifficulty } from './config'
+import { HOLD_MIN_MS, type RhythmNote, type RgLane, type RgDifficulty } from './config'
 
 export type { MidiTrackInfo } from '@webgamekit/audio'
 export { midiGetTracks as getMidiTracks } from '@webgamekit/audio'
@@ -14,7 +14,8 @@ const applyDifficulty = (notes: RhythmNote[], difficulty: RgDifficulty): RhythmN
   if (minGap === 0) return notes
   return notes.reduce<RhythmNote[]>((accumulator, note) => {
     const last = accumulator.at(-1)
-    return !last || note.time - last.time >= minGap ? [...accumulator, note] : accumulator
+    const earliestNext = last ? last.time + Math.max(minGap, last.durationMs ?? 0) : 0
+    return note.time >= earliestNext ? [...accumulator, note] : accumulator
   }, [])
 }
 
@@ -29,7 +30,8 @@ const trackToNotes = (track: Midi['tracks'][number], difficulty: RgDifficulty): 
   const allNotes: RhythmNote[] = sorted.map((n) => ({
     lane: pitchToLane(n.midi, min, range),
     midiNote: n.midi,
-    time: Math.round(n.time * 1000)
+    time: Math.round(n.time * 1000),
+    ...(n.duration * 1000 >= HOLD_MIN_MS && { durationMs: Math.round(n.duration * 1000) })
   }))
   return applyDifficulty(allNotes, difficulty)
 }

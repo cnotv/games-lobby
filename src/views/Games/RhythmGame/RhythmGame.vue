@@ -32,6 +32,7 @@ const {
   hostId,
   song,
   difficulty,
+  holdNotes,
   instrument,
   customNotes,
   customSongName,
@@ -218,6 +219,7 @@ onMounted(() => {
       :room-id="roomId"
       :song="song"
       :difficulty="difficulty"
+      :hold-notes="holdNotes"
       :winner-id="winnerId"
       :local-peer-id="localPeerId || 'solo'"
       @update:player-name="playerName = $event"
@@ -231,12 +233,14 @@ onMounted(() => {
       @song-picked="handleSongPicked"
       @instrument-picked="store.instrument = $event"
       @update:difficulty="store.difficulty = $event"
+      @update:hold-notes="store.holdNotes = $event"
     />
 
     <RhythmGameGame
       v-else-if="phase === 'playing'"
       :song="song"
       :difficulty="difficulty"
+      :hold-notes="holdNotes"
       :instrument="instrument"
       :custom-notes="customNotes"
       :background-notes="backgroundNotes"

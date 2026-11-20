@@ -13,6 +13,7 @@ const makeDeps = (overrides: Partial<GameDeps> = {}): GameDeps => ({
   canvas: ref(null),
   song: 'custom',
   difficulty: 'hard',
+  holdNotes: true,
   instrument: 'bass',
   startAt: 0,
   customNotes: chart,

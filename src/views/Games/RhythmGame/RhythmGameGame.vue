@@ -15,6 +15,7 @@ import type { ScheduledNote } from '@webgamekit/audio'
 const props = defineProps<{
   song: RgSong
   difficulty: RgDifficulty
+  holdNotes: boolean
   instrument: RgInstrument
   startAt: number
   customNotes?: RhythmNote[] | null
@@ -40,6 +41,7 @@ const game = useRhythmGame({
   canvas,
   song: props.song,
   difficulty: props.difficulty,
+  holdNotes: props.holdNotes,
   instrument: props.instrument,
   startAt: props.startAt,
   customNotes: props.customNotes,
@@ -57,14 +59,16 @@ const resizeCanvas = (): void => {
   element.height = element.offsetHeight
 }
 
-const pressLaneAt = (clientX: number): void => {
+const laneAt = (clientX: number): RgLane | null => {
   const element = canvas.value
-  if (!element) return
+  if (!element) return null
   const { left, width } = element.getBoundingClientRect()
-  const lane = Math.min(
-    LANES - 1,
-    Math.max(0, Math.floor(((clientX - left) / width) * LANES))
-  ) as RgLane
+  return Math.min(LANES - 1, Math.max(0, Math.floor(((clientX - left) / width) * LANES))) as RgLane
+}
+
+const pressLaneAt = (clientX: number): void => {
+  const lane = laneAt(clientX)
+  if (lane === null) return
   game.laneActive.value = game.laneActive.value.map((_, i) => i === lane) as boolean[]
   game.pressLane(lane)
   setTimeout(() => {
@@ -74,11 +78,22 @@ const pressLaneAt = (clientX: number): void => {
   }, 120)
 }
 
-const handleCanvasClick = (event: MouseEvent): void => pressLaneAt(event.clientX)
+const releaseLaneAt = (clientX: number): void => {
+  const lane = laneAt(clientX)
+  if (lane !== null) game.releaseLane(lane)
+}
+
+const handleCanvasMouseDown = (event: MouseEvent): void => pressLaneAt(event.clientX)
+const handleCanvasMouseUp = (event: MouseEvent): void => releaseLaneAt(event.clientX)
 
 const handleCanvasTouch = (event: TouchEvent): void => {
   event.preventDefault()
   ;[...event.changedTouches].forEach((t) => pressLaneAt(t.clientX))
+}
+
+const handleCanvasTouchEnd = (event: TouchEvent): void => {
+  event.preventDefault()
+  ;[...event.changedTouches].forEach((t) => releaseLaneAt(t.clientX))
 }
 
 onMounted(async () => {
@@ -136,8 +151,11 @@ onUnmounted(() => {
       <canvas
         ref="canvas"
         class="rg-game__canvas"
-        @click="handleCanvasClick"
+        @mousedown="handleCanvasMouseDown"
+        @mouseup="handleCanvasMouseUp"
         @touchstart="handleCanvasTouch"
+        @touchend="handleCanvasTouchEnd"
+        @touchcancel="handleCanvasTouchEnd"
       />
       <Transition name="rg-countdown">
         <div v-if="countdownValue !== null" class="rg-game__countdown">

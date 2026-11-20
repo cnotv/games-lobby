@@ -8,7 +8,11 @@ import {
   getAccuracy,
   getGrade,
   findHittableNote,
-  findExpiredNotes
+  findExpiredNotes,
+  evaluateRelease,
+  findHeldNoteIndex,
+  findFinishedHolds,
+  stripHoldNotes
 } from './rhythmGameUtilities'
 import type { RgInstrument, RhythmNote } from './config'
 
@@ -161,5 +165,45 @@ describe('findExpiredNotes', () => {
 
   it('returns empty when no notes expired', () => {
     expect(findExpiredNotes(notes, 600)).toEqual([])
+  })
+})
+
+describe('hold notes', () => {
+  const holdNote: RhythmNote = { lane: 1, midiNote: 64, time: 1000, durationMs: 1000 }
+
+  it.each([
+    [1000, 'broken'],
+    [1879, 'broken'],
+    [1880, 'complete'],
+    [2300, 'complete']
+  ])('a release at %i ms of a hold ending at 2000 ms is %s', (releaseMs, expected) => {
+    expect(evaluateRelease(holdNote, releaseMs)).toBe(expected)
+  })
+
+  it('finds the note being held in a lane', () => {
+    const notes: RhythmNote[] = [
+      { lane: 1, midiNote: 60, time: 100 },
+      { ...holdNote, hit: 'perfect', holding: true }
+    ]
+
+    expect(findHeldNoteIndex(notes, 1)).toBe(1)
+    expect(findHeldNoteIndex(notes, 2)).toBe(-1)
+  })
+
+  it('finishes a hold once the song reaches its end', () => {
+    const notes: RhythmNote[] = [{ ...holdNote, hit: 'good', holding: true }]
+
+    expect(findFinishedHolds(notes, 1999)).toEqual([])
+    expect(findFinishedHolds(notes, 2000)).toEqual([0])
+  })
+
+  it('does not expire a note whose hold has started', () => {
+    const notes: RhythmNote[] = [{ ...holdNote, hit: 'perfect', holding: true }]
+
+    expect(findExpiredNotes(notes, 5000)).toEqual([])
+  })
+
+  it('turns holds back into taps', () => {
+    expect(stripHoldNotes([holdNote])).toEqual([{ lane: 1, midiNote: 64, time: 1000 }])
   })
 })

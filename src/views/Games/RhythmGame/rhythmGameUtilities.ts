@@ -4,6 +4,7 @@ import {
   HIT_WINDOW_GOOD_MS,
   SCORE_PERFECT,
   SCORE_GOOD,
+  SCORE_HOLD_BONUS,
   COMBO_THRESHOLDS,
   COMBO_MULTIPLIERS,
   INSTRUMENT_PRESETS,
@@ -127,3 +128,48 @@ export const findExpiredNotes = (notes: RhythmNote[], currentMs: number): number
     if (note.hit === undefined && currentMs - note.time > HIT_WINDOW_GOOD_MS) accumulator.push(i)
     return accumulator
   }, [])
+
+/**
+ * Whether a held note was let go in time. Letting go within the good window of its end counts,
+ * the same leniency a tap gets.
+ * @param note - The held note
+ * @param releaseMs - Song time of the release
+ * @returns 'complete' for a hold carried to its end, 'broken' for one dropped early
+ */
+export const evaluateRelease = (note: RhythmNote, releaseMs: number): 'complete' | 'broken' =>
+  releaseMs >= note.time + (note.durationMs ?? 0) - HIT_WINDOW_GOOD_MS ? 'complete' : 'broken'
+
+/**
+ * Finds the hold a lane is carrying, so letting go of the lane can settle it.
+ * @param notes - All notes
+ * @param lane - The lane that was released
+ * @returns Index of the note held in that lane, or -1
+ */
+export const findHeldNoteIndex = (notes: RhythmNote[], lane: number): number =>
+  notes.findIndex((note) => note.lane === lane && note.holding === true)
+
+/**
+ * Holds the player kept down all the way to their end, which finish without a release.
+ * @param notes - All notes
+ * @param currentMs - Current elapsed ms
+ * @returns Indices of holds to complete
+ */
+export const findFinishedHolds = (notes: RhythmNote[], currentMs: number): number[] =>
+  notes.flatMap((note, i) =>
+    note.holding && currentMs >= note.time + (note.durationMs ?? 0) ? [i] : []
+  )
+
+/**
+ * Turns a chart's sustained notes into taps, for a player who switched hold notes off.
+ * @param notes - A chart
+ * @returns The chart with every hold turned back into a tap
+ */
+export const stripHoldNotes = (notes: RhythmNote[]): RhythmNote[] =>
+  notes.map(({ lane, midiNote, time }) => ({ lane, midiNote, time }))
+
+/**
+ * The score for completing a hold.
+ * @param combo - Current combo count
+ * @returns The bonus for completing a hold, with the combo multiplier applied
+ */
+export const getHoldBonus = (combo: number): number => SCORE_HOLD_BONUS * getComboMultiplier(combo)

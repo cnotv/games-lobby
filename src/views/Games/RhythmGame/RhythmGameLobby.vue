@@ -37,6 +37,7 @@ const props = defineProps<{
   roomId: string
   song: RgSong
   difficulty: RgDifficulty
+  holdNotes: boolean
   showResults?: boolean
   winnerId?: string | null
   localPeerId?: string
@@ -60,6 +61,7 @@ const emit = defineEmits<{
   songPicked: [song: RgSong]
   instrumentPicked: [instrument: RgInstrument]
   'update:difficulty': [difficulty: RgDifficulty]
+  'update:holdNotes': [holdNotes: boolean]
 }>()
 
 const store = useRhythmGameStore()
@@ -156,6 +158,19 @@ const difficultyField = computed(
   })
 )
 
+const holdNotesField = computed(
+  (): LobbyConfigField => ({
+    type: 'select',
+    key: 'holdNotes',
+    label: 'Hold notes',
+    value: props.holdNotes ? 'on' : 'off',
+    options: [
+      { value: 'on', label: 'On' },
+      { value: 'off', label: 'Off' }
+    ]
+  })
+)
+
 const trackField = computed(
   (): LobbyConfigField => ({
     type: 'select',
@@ -173,6 +188,7 @@ const trackField = computed(
 const configFields = computed((): LobbyConfigField[] => [
   songField.value,
   ...(selectedMidiId.value === null ? [difficultyField.value] : []),
+  holdNotesField.value,
   ...(availableTracks.value.length > 1 ? [trackField.value] : [])
 ])
 
@@ -284,6 +300,7 @@ const pickTrack = async (trackIndex: number): Promise<void> => {
 const handleConfig = async (key: string, value: string | number): Promise<void> => {
   if (key === 'song') await pickSong(String(value))
   if (key === 'difficulty') pickDifficulty(String(value))
+  if (key === 'holdNotes') emit('update:holdNotes', value === 'on')
   if (key === 'track') await pickTrack(Number(value))
 }
 

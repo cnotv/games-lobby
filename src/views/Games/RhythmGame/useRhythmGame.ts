@@ -19,15 +19,18 @@ import {
 } from './config'
 import { fetchSongBacking, fetchSongNotes } from './loadRhythmSong'
 import { slowChartNotes, slowLiveSongNotes, slowScheduledNotes } from './tempo'
+import { useRoundScore } from './useRoundScore'
+import { useHoldNotes } from './useHoldNotes'
 import { createRhythmAudio } from './rhythmAudio'
 import {
   buildScheduledNotes,
   evaluateHit,
-  getHitScore,
   getComboMultiplier,
   getAccuracy,
   getGrade,
   findHittableNote,
+  findFinishedHolds,
+  stripHoldNotes,
   findExpiredNotes
 } from './rhythmGameUtilities'
 import type { RgScore } from '@/stores/rhythmGame'
@@ -47,6 +50,8 @@ export type GameDeps = {
   canvas: Ref<HTMLCanvasElement | null>
   song: RgSong
   difficulty: RgDifficulty
+  /** Off turns every sustained note into a tap. */
+  holdNotes: boolean
   instrument: RgInstrument
   startAt: number
   customNotes?: RhythmNote[] | null
@@ -81,7 +86,7 @@ export const buildSongNotes = (
     ? [...gameNotes, ...deps.backgroundNotes]
     : gameNotes
   return {
-    chart: slowChartNotes(chart, tempoRate),
+    chart: slowChartNotes(deps.holdNotes ? chart : stripHoldNotes(chart), tempoRate),
     // A live Strudel song slows by setcps, which keeps pitch, so its chart notes keep theirs too.
     scheduled: deps.customStrudelCode
       ? slowLiveSongNotes(scheduled, tempoRate)
@@ -219,17 +224,18 @@ const drawFrame = (
   })
 
   context.notes.forEach((note) => {
-    if (note.hit !== undefined) return
-    const y = hitZoneY - (note.time - currentMs) * NOTE_SPEED_PX_PER_MS
-    if (y < -NOTE_HEIGHT || y > h + NOTE_HEIGHT) return
+    if (note.hit !== undefined && !note.holding) return
+    const headY = Math.min(hitZoneY - (note.time - currentMs) * NOTE_SPEED_PX_PER_MS, hitZoneY)
+    const tailY = hitZoneY - (note.time + (note.durationMs ?? 0) - currentMs) * NOTE_SPEED_PX_PER_MS
+    if (headY < -NOTE_HEIGHT || tailY > h + NOTE_HEIGHT) return
     const x = laneW * note.lane + 6
     const nw = laneW - 12
     const color = LANE_COLORS[note.lane]
-    ctx.shadowBlur = 12
+    ctx.shadowBlur = note.holding ? 24 : 12
     ctx.shadowColor = color
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.roundRect(x, y - NOTE_HEIGHT / 2, nw, NOTE_HEIGHT, NOTE_RADIUS)
+    ctx.roundRect(x, tailY - NOTE_HEIGHT / 2, nw, headY - tailY + NOTE_HEIGHT, NOTE_RADIUS)
     ctx.fill()
     ctx.shadowBlur = 0
   })
@@ -334,12 +340,9 @@ const clearCanvas = (canvas: HTMLCanvasElement | null): void => {
  * @returns Reactive score state and the round's lifecycle controls
  */
 export const useRhythmGame = (deps: GameDeps) => {
-  const score = ref(0)
-  const combo = ref(0)
-  const maxCombo = ref(0)
-  const perfect = ref(0)
-  const good = ref(0)
-  const miss = ref(0)
+  const { score, combo, maxCombo, perfect, good, miss, emitScore, registerHit } = useRoundScore(
+    deps.onScoreUpdate
+  )
   const laneActive = ref<boolean[]>([false, false, false, false])
 
   const tempoRate = resolveTempoRate(deps)
@@ -360,16 +363,6 @@ export const useRhythmGame = (deps: GameDeps) => {
   const hitKey = ref(0)
   const progressPct = ref(0)
   const songDurationMs = ref(0)
-  const emitScore = (): void =>
-    deps.onScoreUpdate({
-      score: score.value,
-      combo: combo.value,
-      maxCombo: maxCombo.value,
-      perfect: perfect.value,
-      good: good.value,
-      miss: miss.value
-    })
-
   const pressLane = (lane: RgLane): void => {
     const currentMs = readCurrentMs()
 
@@ -379,24 +372,21 @@ export const useRhythmGame = (deps: GameDeps) => {
     const delta = Math.abs(notes[index].time - currentMs)
     const result = evaluateHit(delta)
     notes[index].hit = result
+    notes[index].holding = notes[index].durationMs !== undefined && result !== 'miss'
 
-    if (result !== 'miss') {
-      const pts = getHitScore(result, combo.value)
-      score.value += pts
-      combo.value++
-      if (combo.value > maxCombo.value) maxCombo.value = combo.value
-      if (result === 'perfect') perfect.value++
-      else good.value++
-    } else {
-      miss.value++
-      combo.value = 0
-    }
-
+    registerHit(result)
     applyHitFeedback(result, lane, laneFlashes, deps.canvas.value, particles)
     lastHit.value = result
     hitKey.value++
     emitScore()
   }
+
+  const { finishHold, releaseLane } = useHoldNotes({
+    getNotes: () => notes,
+    readCurrentMs,
+    round: { score, combo, registerHit, emitScore },
+    laneFlashes
+  })
 
   const gameLoop = (timestamp: number): void => {
     const dt = timestamp - lastFrameTime
@@ -408,11 +398,11 @@ export const useRhythmGame = (deps: GameDeps) => {
       return
     }
 
+    findFinishedHolds(notes, currentMs).forEach((i) => finishHold(i, 'complete'))
     const expired = findExpiredNotes(notes, currentMs)
     expired.forEach((i) => {
       notes[i].hit = 'miss'
-      miss.value++
-      combo.value = 0
+      registerHit('miss')
       laneFlashes[notes[i].lane] = { alpha: 0.6, result: 'miss' }
       if (deps.canvas.value) spawnParticles(deps.canvas.value, particles, notes[i].lane, 'miss')
     })
@@ -430,7 +420,11 @@ export const useRhythmGame = (deps: GameDeps) => {
     }
 
     const lastNote = notes.at(-1)
-    if (lastNote && currentMs > lastNote.time + 2000 && notes.every((n) => n.hit !== undefined)) {
+    if (
+      lastNote &&
+      currentMs > lastNote.time + 2000 &&
+      notes.every((n) => n.hit !== undefined && !n.holding)
+    ) {
       scheduler.stop()
       stopSong()
       deps.onSongEnd()
@@ -469,7 +463,7 @@ export const useRhythmGame = (deps: GameDeps) => {
 
   const mountControls = (touchTarget?: HTMLElement | null) =>
     createControls({
-      ...buildControlsMapping(laneActive, pressLane, () => {}),
+      ...buildControlsMapping(laneActive, pressLane, releaseLane),
       keyboardTarget: null,
       touchTarget: touchTarget ?? null
     })
@@ -489,6 +483,7 @@ export const useRhythmGame = (deps: GameDeps) => {
     init,
     destroy,
     pressLane,
+    releaseLane,
     mountControls,
     songDurationMs,
     progressPct,

@@ -41,6 +41,8 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
   const solo = ref(false)
   const song = ref<RgSong>('electric-pulse')
   const difficulty = ref<RgDifficulty>('medium')
+  /** Local to each player: a sustained note is held, or tapped when this is off. */
+  const holdNotes = ref(true)
   const instrument = ref<RgInstrument>('piano')
   const customNotes = ref<RhythmNote[] | null>(null)
   const customSongName = ref('')
@@ -100,6 +102,7 @@ export const useRhythmGameStore = defineStore('rhythmGame', () => {
     solo,
     song,
     difficulty,
+    holdNotes,
     instrument,
     customNotes,
     customSongName,
