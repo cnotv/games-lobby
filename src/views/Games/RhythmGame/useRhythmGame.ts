@@ -5,6 +5,7 @@ import {
   NOTE_SPEED_PX_PER_MS,
   HIT_ZONE_RATIO,
   NOTE_HEIGHT,
+  HOLD_END_GAP_PX,
   NOTE_RADIUS,
   LANE_COLORS,
   LANE_KEYS,
@@ -235,7 +236,9 @@ const drawFrame = (
     ctx.shadowColor = color
     ctx.fillStyle = color
     ctx.beginPath()
-    ctx.roundRect(x, tailY - NOTE_HEIGHT / 2, nw, headY - tailY + NOTE_HEIGHT, NOTE_RADIUS)
+    const barTopY =
+      note.durationMs === undefined ? tailY - NOTE_HEIGHT / 2 : tailY + HOLD_END_GAP_PX
+    ctx.roundRect(x, barTopY, nw, headY + NOTE_HEIGHT / 2 - barTopY, NOTE_RADIUS)
     ctx.fill()
     ctx.shadowBlur = 0
   })

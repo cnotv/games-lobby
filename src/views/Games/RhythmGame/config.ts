@@ -23,6 +23,8 @@ export const SCORE_PERFECT = 300
 export const SCORE_GOOD = 100
 /** A note this long or longer is held rather than tapped. */
 export const HOLD_MIN_MS = 400
+/** How far below its true end a hold bar stops, so holds in a row show a gap between them. */
+export const HOLD_END_GAP_PX = 30
 export const SCORE_HOLD_BONUS = 200
 export const MATCHMAKER_ROOM = 'rhythm-game-matchmaker'
 
