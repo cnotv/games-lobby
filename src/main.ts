@@ -1,5 +1,6 @@
 import '@webgamekit/strudel-editor/tokens.css'
 import '@webgamekit/strudel-editor/style.css'
+import '@webgamekit/strudel-flow/style.css'
 import './style.css'
 import './assets/styles/_variables.scss'
 import './assets/styles/utilities.scss'

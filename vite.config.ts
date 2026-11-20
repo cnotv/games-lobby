@@ -19,7 +19,17 @@ export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
   plugins: [vue(), wasm(), ...(useHttps ? [basicSsl()] : [])],
   resolve: {
-    alias: [{ find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) }],
+    alias: [
+      { find: '@', replacement: fileURLToPath(new URL('./src', import.meta.url)) },
+      // strudel-flow ships its stylesheet but does not export it, and the editor loads the package
+      // lazily without importing the styles, so the nodes render unstyled and invisible.
+      {
+        find: '@webgamekit/strudel-flow/style.css',
+        replacement: fileURLToPath(
+          new URL('./node_modules/@webgamekit/strudel-flow/dist/style.css', import.meta.url)
+        )
+      }
+    ],
     dedupe: ['three']
   },
   css: {
