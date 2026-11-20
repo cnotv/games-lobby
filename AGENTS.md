@@ -40,6 +40,12 @@ owes them before the pull request is marked ready.
 - **Write it once, at the length it earns.** A one-line fix gets one line; a surprising
   constraint gets a paragraph. Prose that repeats the diff or restates something already
   written above is noise that hides what matters. Each kind of writing has one home, below.
+- **A bug fixed upstream in a Strudel package waits for its release.** When a bug comes from
+  `@webgamekit/strudel-editor` or `strudel-flow` and the fix is in progress in
+  strudel-node-editor, say so on the issue ("waiting on a Strudel release") and do not work
+  around it here. On resume, or when told a new version is out, run
+  `gh workflow run strudel-bump.yml` (the check is cheap: it installs only when npm is ahead),
+  then re-check the bug on the bump PR.
 - **Never modify `eslint.config.js`** unless explicitly asked. Fix violations by changing the
   code, not by loosening the rule.
 - **Never use `eslint-disable`**, in any form, and never `--no-verify`. If a hook or a rule
