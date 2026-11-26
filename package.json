@@ -51,7 +51,7 @@
     "@webgamekit/history": "^0.1.0",
     "@webgamekit/logic": "^0.1.0",
     "@webgamekit/multiplayer-p2p": "^0.1.1",
-    "@webgamekit/strudel-editor": "^0.3.2",
+    "@webgamekit/strudel-editor": "^0.3.5",
     "@webgamekit/strudel-flow": "^0.2.0",
     "@webgamekit/threejs": "^0.1.0",
     "pinia": "^2.3.0",
