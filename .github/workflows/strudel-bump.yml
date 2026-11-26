@@ -1,0 +1,89 @@
+name: Bump Strudel
+
+on:
+  schedule:
+    - cron: '17 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # A pull request opened with the default token does not start the Tests workflow,
+      # so BUMP_TOKEN (a personal access token or app token) is preferred when set.
+      GH_TOKEN: ${{ secrets.BUMP_TOKEN || github.token }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.BUMP_TOKEN || github.token }}
+
+      - name: Compare npm with package.json
+        id: compare
+        run: |
+          OUTDATED=false
+          for PACKAGE in strudel-editor strudel-flow; do
+            LATEST=$(npm view "@webgamekit/${PACKAGE}" version)
+            CURRENT=$(jq -r ".dependencies[\"@webgamekit/${PACKAGE}\"]" package.json | tr -d '^~')
+            [ "$LATEST" != "$CURRENT" ] && OUTDATED=true
+          done
+          echo "outdated=${OUTDATED}" >> "$GITHUB_OUTPUT"
+
+      - if: steps.compare.outputs.outdated == 'true'
+        uses: pnpm/action-setup@v6
+        with:
+          version: 9
+
+      - if: steps.compare.outputs.outdated == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Update the Strudel packages
+        if: steps.compare.outputs.outdated == 'true'
+        run: pnpm update @webgamekit/strudel-editor @webgamekit/strudel-flow --latest
+
+      - name: Open an issue and a pull request when something changed
+        if: steps.compare.outputs.outdated == 'true'
+        run: |
+          if git diff --quiet package.json pnpm-lock.yaml; then
+            echo "Strudel packages are up to date"
+            exit 0
+          fi
+
+          VERSION=$(jq -r '.dependencies["@webgamekit/strudel-editor"]' package.json | tr -d '^~')
+          TITLE="chore: bump Strudel packages to ${VERSION}"
+
+          if [ -n "$(gh pr list --state open --search "\"${TITLE}\" in:title" --json number --jq '.[].number')" ]; then
+            echo "A pull request for ${VERSION} is already open"
+            exit 0
+          fi
+
+          ISSUE_URL=$(gh issue create \
+            --title "Bump Strudel packages to ${VERSION}" \
+            --body "A newer Strudel release is on npm. Update @webgamekit/strudel-editor and @webgamekit/strudel-flow, then check the Rhythm game and the Rock Runner sound panel still work.")
+          ISSUE_NUMBER="${ISSUE_URL##*/}"
+          BRANCH="chore/${ISSUE_NUMBER}-bump-strudel-${VERSION}"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add package.json pnpm-lock.yaml
+          git commit -m "$TITLE"
+          git push origin "$BRANCH"
+
+          PR_URL=$(gh pr create \
+            --title "${TITLE} (#${ISSUE_NUMBER})" \
+            --body "Closes #${ISSUE_NUMBER}
+
+          Opened by the Strudel bump workflow after a newer release appeared on npm.")
+
+          # Waits for the required checks on main, so a red bump never merges.
+          gh pr merge --auto --squash "$PR_URL"
