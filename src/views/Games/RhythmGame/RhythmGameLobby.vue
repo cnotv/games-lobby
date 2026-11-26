@@ -358,6 +358,11 @@ const refreshSavedSongs = (): void => {
     )
     .map((song) => song.id)
   changedSongIds.forEach((songId) => strudelSongNotes.forgetSong(songId))
+  // A saved or edited song is written now, while the player is in the lobby, so a round never
+  // waits on it.
+  savedSongs.value
+    .filter((song) => previousSongs.find((previous) => previous.id === song.id)?.code !== song.code)
+    .forEach((song) => void strudelSongNotes.notesFor(song.id, song.code).catch(() => undefined))
   const pickedId = selectedStrudelId.value
   if (pickedId === null || !changedSongIds.includes(pickedId)) return
   if (strudelSongs.value.some((song) => song.id === pickedId)) {
